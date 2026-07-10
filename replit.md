@@ -63,7 +63,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Setup status
 
 - `DATABASE_URL` is provided by Replit's built-in Postgres; schema was pushed with `pnpm --filter @workspace/db run push`.
-- Demo users (`admin@qa.dev` / `tester@qa.dev`, password `password`) were manually inserted into the `users` table — there is no seed script yet, so a fresh DB will have no login-able users or sample projects/audits/bugs until you add data through the UI or write a seed script.
+- Demo data (4 users, 5 projects, audits, bugs, reports, notifications, scheduled audits) was populated by running the repo's own seed script: `pnpm --filter @workspace/db run seed` (`lib/db/scripts/seed.ts`). Re-running it truncates and regenerates the same demo dataset. Demo logins: `admin@qa.dev`, `sarah.chen@qa.dev`, `marcus.johnson@qa.dev`, `priya.patel@qa.dev`, all with password `password`.
+- Workflows `artifacts/api-server: API Server` and `artifacts/qa-portal: web` are running; `artifacts/mockup-sandbox: Component Preview Server` exists but is not needed for normal use.
 
 ## Gotchas
 
