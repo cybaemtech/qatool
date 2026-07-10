@@ -278,8 +278,8 @@ export default function ExecutiveDashboard() {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Executive Dashboard</h1>
-          <p className="text-slate-500 mt-1">Portfolio-wide health, risk, and productivity overview.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Executive Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Portfolio-wide health, risk, and productivity overview.</p>
         </div>
         <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700 bg-indigo-50">
           Updated {format(now, "MMM d, h:mm a")}

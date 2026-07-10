@@ -35,6 +35,7 @@ import {
   Activity
 } from "lucide-react";
 import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Projects() {
   const [search, setSearch] = useState("");
@@ -71,33 +72,33 @@ export default function Projects() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Projects</h1>
-          <p className="text-slate-500 mt-1">Manage and monitor your target applications.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Projects</h1>
+          <p className="text-muted-foreground mt-1">Manage and monitor your target applications.</p>
         </div>
-        <Button onClick={() => setLocation("/projects/new")} className="bg-indigo-600 hover:bg-indigo-700">
+        <Button onClick={() => setLocation("/projects/new")} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           New Project
         </Button>
       </div>
 
-      <Card className="shadow-sm border-slate-200">
-        <div className="p-4 border-b border-slate-200 flex items-center gap-4">
+      <Card className="shadow-sm border-border">
+        <div className="p-4 border-b border-border flex items-center gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               placeholder="Search projects..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-slate-50"
+              className="pl-9 bg-muted/40"
             />
           </div>
         </div>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="w-[300px]">Name</TableHead>
                 <TableHead>Environment</TableHead>
@@ -109,36 +110,42 @@ export default function Projects() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                    Loading projects...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <TableCell key={j}><Skeleton className="h-4 w-full max-w-[140px]" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
               ) : projects?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-slate-500">
-                    No projects found. Create one to get started.
+                  <TableCell colSpan={6} className="h-40 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2">
+                      <Folder className="h-10 w-10 text-muted-foreground/30" />
+                      <p className="font-medium text-foreground">No projects found</p>
+                      <p className="text-sm">Create one to get started.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 projects?.map((project: Project) => (
                   <TableRow 
                     key={project.id}
-                    className="cursor-pointer hover:bg-slate-50 transition-colors"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => setLocation(`/projects/${project.id}`)}
                   >
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-md bg-indigo-50 flex items-center justify-center">
-                          <Folder className="h-4 w-4 text-indigo-600" />
+                        <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                          <Folder className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <div className="text-slate-900 font-semibold">{project.name}</div>
+                          <div className="text-foreground font-semibold">{project.name}</div>
                           <a 
                             href={project.url} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="text-xs text-slate-500 hover:text-indigo-600 flex items-center gap-1 mt-0.5"
+                            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-0.5"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {project.url} <ExternalLink className="h-3 w-3" />
@@ -147,23 +154,23 @@ export default function Projects() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={`capitalize font-medium ${getEnvBadgeColor(project.environment)}`}>
+                      <Badge variant="outline" className={`rounded-full capitalize font-medium ${getEnvBadgeColor(project.environment)}`}>
                         {project.environment}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-medium text-slate-600">
+                    <TableCell className="text-right font-medium text-muted-foreground">
                       {project.auditCount || 0}
                     </TableCell>
                     <TableCell className="text-right">
                       {project.openBugCount ? (
-                        <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-100">
+                        <Badge variant="secondary" className="rounded-full bg-red-50 text-red-700 border-red-100">
                           {project.openBugCount}
                         </Badge>
                       ) : (
-                        <span className="text-slate-400">0</span>
+                        <span className="text-muted-foreground/60">0</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-slate-500">
+                    <TableCell className="text-sm text-muted-foreground">
                       {project.lastAuditAt ? format(new Date(project.lastAuditAt), 'MMM d, yyyy') : 'Never'}
                     </TableCell>
                     <TableCell>

@@ -18,6 +18,7 @@ import { Bug, MessageSquare, Send, User, Calendar } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PRIORITY_COLORS: Record<string, string> = {
   critical: "bg-red-100 text-red-800 border-red-200",
@@ -81,10 +82,10 @@ export default function Bugs() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Bug className="h-6 w-6 text-primary" /> Bug Tracker
           </h1>
           <p className="text-muted-foreground mt-1">Manage and track issues discovered during audits.</p>
@@ -124,13 +125,18 @@ export default function Bugs() {
       </div>
 
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">Loading bugs…</div>
+            <div className="p-4 space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
           ) : !bugs?.length ? (
             <div className="p-12 text-center">
-              <Bug className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
-              <p className="text-muted-foreground">No bugs match your filters.</p>
+              <Bug className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="font-medium text-foreground">No bugs match your filters</p>
+              <p className="text-sm text-muted-foreground mt-1">Try adjusting the severity, priority, or status filters above.</p>
             </div>
           ) : (
             <Table>
@@ -159,7 +165,7 @@ export default function Bugs() {
                     </TableCell>
                     <TableCell><SeverityBadge severity={bug.severity} /></TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn("text-xs", PRIORITY_COLORS[bug.priority])}>
+                      <Badge variant="outline" className={cn("rounded-full text-xs", PRIORITY_COLORS[bug.priority])}>
                         {bug.priority}
                       </Badge>
                     </TableCell>

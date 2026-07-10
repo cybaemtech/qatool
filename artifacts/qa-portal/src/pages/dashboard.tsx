@@ -19,6 +19,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line, Legend
 } from "recharts";
 import { SeverityBadge } from "@/components/severity-badge";
+import { AnimatedCounter } from "@/components/animated-counter";
 import { format } from "date-fns";
 
 export default function Dashboard() {
@@ -38,55 +39,55 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Dashboard</h1>
-        <p className="text-slate-500 mt-1">Overview of your testing infrastructure.</p>
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">Overview of your testing infrastructure.</p>
       </div>
 
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="shadow-sm border-slate-200">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card className="shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Projects</CardTitle>
-            <Folder className="h-4 w-4 text-indigo-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Projects</CardTitle>
+            <Folder className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{summary?.totalProjects ?? '-'}</div>
+            <div className="text-2xl font-bold text-foreground"><AnimatedCounter value={summary?.totalProjects ?? '-'} /></div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Audits</CardTitle>
-            <Activity className="h-4 w-4 text-indigo-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Audits</CardTitle>
+            <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{summary?.totalAudits ?? '-'}</div>
+            <div className="text-2xl font-bold text-foreground"><AnimatedCounter value={summary?.totalAudits ?? '-'} /></div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Open Bugs</CardTitle>
-            <Bug className="h-4 w-4 text-indigo-500" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Open Bugs</CardTitle>
+            <Bug className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{summary?.totalBugs ?? '-'}</div>
+            <div className="text-2xl font-bold text-foreground"><AnimatedCounter value={summary?.totalBugs ?? '-'} /></div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Critical Issues</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Critical Issues</CardTitle>
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{summary?.criticalIssues ?? '-'}</div>
+            <div className="text-2xl font-bold text-red-600"><AnimatedCounter value={summary?.criticalIssues ?? '-'} /></div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm border-slate-200">
+        <Card className="shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Avg Performance</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Performance</CardTitle>
             <Zap className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">{summary?.avgPerformanceScore ? Math.round(summary.avgPerformanceScore) : '-'}</div>
+            <div className="text-2xl font-bold text-emerald-600"><AnimatedCounter value={summary?.avgPerformanceScore ? Math.round(summary.avgPerformanceScore) : '-'} /></div>
           </CardContent>
         </Card>
       </div>

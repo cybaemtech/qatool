@@ -1,8 +1,9 @@
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 
 export function StatusBadge({ status }: { status: string }) {
-  let colorClass = "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200";
-  
+  let colorClass = "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200";
+
   switch (status) {
     case 'completed':
     case 'resolved':
@@ -17,7 +18,7 @@ export function StatusBadge({ status }: { status: string }) {
       break;
     case 'pending':
     case 'open':
-      colorClass = "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200";
+      colorClass = "bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200";
       break;
     case 'ignored':
     case 'cancelled':
@@ -26,8 +27,16 @@ export function StatusBadge({ status }: { status: string }) {
   }
 
   return (
-    <Badge variant="outline" className={`font-semibold capitalize ${colorClass}`}>
-      {status.replace('_', ' ')}
-    </Badge>
+    <motion.div
+      key={status}
+      initial={{ scale: 0.85, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="inline-block"
+    >
+      <Badge variant="outline" className={`rounded-full font-semibold capitalize ${colorClass}`}>
+        {status.replace('_', ' ')}
+      </Badge>
+    </motion.div>
   );
 }

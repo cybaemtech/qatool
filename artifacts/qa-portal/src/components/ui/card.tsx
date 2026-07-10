@@ -12,9 +12,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -3 }}
       className={cn(
-        "rounded-xl border bg-card text-card-foreground shadow transition-shadow duration-200 hover:shadow-md",
+        "rounded-xl border bg-card text-card-foreground shadow-sm transition-shadow duration-200 hover:shadow-lg",
         className
       )}
       {...props}

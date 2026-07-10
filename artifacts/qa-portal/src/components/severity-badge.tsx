@@ -1,9 +1,9 @@
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { BugSeverity } from "@workspace/api-client-react";
 
 export function SeverityBadge({ severity }: { severity: string }) {
-  let colorClass = "bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200";
-  
+  let colorClass = "bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200";
+
   switch (severity) {
     case 'critical':
       colorClass = "bg-red-100 text-red-800 hover:bg-red-200 border-red-200";
@@ -20,8 +20,16 @@ export function SeverityBadge({ severity }: { severity: string }) {
   }
 
   return (
-    <Badge variant="outline" className={`font-semibold capitalize ${colorClass}`}>
-      {severity}
-    </Badge>
+    <motion.div
+      key={severity}
+      initial={{ scale: 0.85, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="inline-block"
+    >
+      <Badge variant="outline" className={`rounded-full font-semibold capitalize ${colorClass}`}>
+        {severity}
+      </Badge>
+    </motion.div>
   );
 }

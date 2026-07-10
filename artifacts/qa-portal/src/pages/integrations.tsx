@@ -11,17 +11,21 @@ import {
   Clock,
   Activity,
   Gauge,
-  Github,
-  Slack,
-  Trello,
-  Waypoints,
-  GitBranch,
-  MessageSquare,
-  KanbanSquare,
-  ListChecks,
   Workflow,
-  Bug as BugIcon,
+  MessageSquare,
 } from "lucide-react";
+import {
+  SiGithub,
+  SiGitlab,
+  SiJira,
+  SiBitbucket,
+  SiSlack,
+  SiTrello,
+  SiClickup,
+  SiAsana,
+  SiLinear,
+  SiSentry,
+} from "react-icons/si";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,7 +86,7 @@ const hoursAgo = (h: number) => new Date(now.getTime() - h * 3600 * 1000).toISOS
 const initialIntegrations: IntegrationDef[] = [
   {
     id: "github", name: "GitHub", description: "Sync repositories, pull requests, and CI status.",
-    icon: Github, brandColor: "text-foreground", status: "connected", version: "v3.2.1",
+    icon: SiGithub, brandColor: "text-[#181717] dark:text-white", status: "connected", version: "v3.2.1",
     lastSync: hoursAgo(0.3), health: "healthy", syncFrequency: "Every 15 min", owner: "Priya Nair",
     apiEndpoint: "https://api.github.com/orgs/qa-portal (mock)", workspaceName: "qa-portal-org",
     projectMapping: "QA Portal → github.com/qa-portal/webapp", webhookStatus: "active", autoSync: true, notifications: true,
@@ -90,7 +94,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "gitlab", name: "GitLab", description: "Track merge requests, pipelines, and issue sync.",
-    icon: GitBranch, brandColor: "text-orange-600", status: "disconnected", version: "v2.0.4",
+    icon: SiGitlab, brandColor: "text-[#FC6D26]", status: "disconnected", version: "v2.0.4",
     lastSync: hoursAgo(96), health: "failed", syncFrequency: "Every 30 min", owner: "Marcus Chen",
     apiEndpoint: "https://gitlab.com/api/v4 (mock)", workspaceName: "qa-portal-gitlab",
     projectMapping: "Not mapped", webhookStatus: "inactive", autoSync: false, notifications: false,
@@ -98,7 +102,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "jira", name: "Jira", description: "Two-way sync of bugs and tickets with Jira issues.",
-    icon: KanbanSquare, brandColor: "text-blue-600", status: "connected", version: "v4.1.0",
+    icon: SiJira, brandColor: "text-[#0052CC]", status: "connected", version: "v4.1.0",
     lastSync: hoursAgo(1.1), health: "healthy", syncFrequency: "Every 10 min", owner: "Elena Rodriguez",
     apiEndpoint: "https://qa-portal.atlassian.net/rest/api/3 (mock)", workspaceName: "QA-PORTAL",
     projectMapping: "Bugs → QAP project", webhookStatus: "active", autoSync: true, notifications: true,
@@ -106,7 +110,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "azure-devops", name: "Azure DevOps", description: "Connect boards, repos, and release pipelines.",
-    icon: Workflow, brandColor: "text-sky-600", status: "connected", version: "v1.8.2",
+    icon: Workflow, brandColor: "text-[#0078D7]", status: "connected", version: "v1.8.2",
     lastSync: hoursAgo(3.4), health: "warning", syncFrequency: "Hourly", owner: "Sam Whitfield",
     apiEndpoint: "https://dev.azure.com/qa-portal (mock)", workspaceName: "qa-portal-ado",
     projectMapping: "Audits → QA Pipelines board", webhookStatus: "active", autoSync: true, notifications: false,
@@ -114,7 +118,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "bitbucket", name: "Bitbucket", description: "Mirror repositories and pull request activity.",
-    icon: Waypoints, brandColor: "text-indigo-600", status: "disconnected", version: "v1.3.0",
+    icon: SiBitbucket, brandColor: "text-[#0052CC]", status: "disconnected", version: "v1.3.0",
     lastSync: hoursAgo(240), health: "failed", syncFrequency: "Every 30 min", owner: "Marcus Chen",
     apiEndpoint: "https://api.bitbucket.org/2.0 (mock)", workspaceName: "qa-portal-bb",
     projectMapping: "Not mapped", webhookStatus: "inactive", autoSync: false, notifications: false,
@@ -122,7 +126,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "slack", name: "Slack", description: "Send audit alerts and bug notifications to channels.",
-    icon: Slack, brandColor: "text-fuchsia-600", status: "connected", version: "v5.0.1",
+    icon: SiSlack, brandColor: "text-[#4A154B] dark:text-[#ECB22E]", status: "connected", version: "v5.0.1",
     lastSync: hoursAgo(0.1), health: "healthy", syncFrequency: "Real-time", owner: "Priya Nair",
     apiEndpoint: "https://slack.com/api (mock)", workspaceName: "qa-portal.slack.com",
     projectMapping: "#qa-alerts channel", webhookStatus: "active", autoSync: true, notifications: true,
@@ -130,7 +134,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "teams", name: "Microsoft Teams", description: "Post pipeline and audit updates to Teams channels.",
-    icon: MessageSquare, brandColor: "text-violet-600", status: "connected", version: "v2.2.0",
+    icon: MessageSquare, brandColor: "text-[#6264A7]", status: "connected", version: "v2.2.0",
     lastSync: hoursAgo(2.0), health: "warning", syncFrequency: "Real-time", owner: "Sam Whitfield",
     apiEndpoint: "https://graph.microsoft.com/v1.0 (mock)", workspaceName: "qa-portal.onmicrosoft.com",
     projectMapping: "QA Automation team", webhookStatus: "active", autoSync: true, notifications: true,
@@ -138,7 +142,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "trello", name: "Trello", description: "Create cards from bugs and track board progress.",
-    icon: Trello, brandColor: "text-blue-500", status: "disconnected", version: "v1.1.5",
+    icon: SiTrello, brandColor: "text-[#0052CC]", status: "disconnected", version: "v1.1.5",
     lastSync: hoursAgo(400), health: "failed", syncFrequency: "Every 30 min", owner: "Elena Rodriguez",
     apiEndpoint: "https://api.trello.com/1 (mock)", workspaceName: "Not connected",
     projectMapping: "Not mapped", webhookStatus: "inactive", autoSync: false, notifications: false,
@@ -146,7 +150,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "clickup", name: "ClickUp", description: "Sync tasks and sprints with ClickUp spaces.",
-    icon: ListChecks, brandColor: "text-pink-600", status: "disconnected", version: "v1.0.2",
+    icon: SiClickup, brandColor: "text-[#7B68EE]", status: "disconnected", version: "v1.0.2",
     lastSync: hoursAgo(600), health: "failed", syncFrequency: "Hourly", owner: "Unassigned",
     apiEndpoint: "https://api.clickup.com/api/v2 (mock)", workspaceName: "Not connected",
     projectMapping: "Not mapped", webhookStatus: "inactive", autoSync: false, notifications: false,
@@ -154,7 +158,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "asana", name: "Asana", description: "Turn audit findings into trackable Asana tasks.",
-    icon: Waypoints, brandColor: "text-rose-500", status: "connected", version: "v2.4.3",
+    icon: SiAsana, brandColor: "text-[#F06A6A]", status: "connected", version: "v2.4.3",
     lastSync: hoursAgo(5.5), health: "warning", syncFrequency: "Every 2 hours", owner: "Elena Rodriguez",
     apiEndpoint: "https://app.asana.com/api/1.0 (mock)", workspaceName: "QA Portal Workspace",
     projectMapping: "Bugs → QA Remediation project", webhookStatus: "active", autoSync: true, notifications: false,
@@ -162,7 +166,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "linear", name: "Linear", description: "Sync engineering issues with Linear cycles.",
-    icon: Activity, brandColor: "text-purple-600", status: "connected", version: "v3.0.0",
+    icon: SiLinear, brandColor: "text-[#5E6AD2]", status: "connected", version: "v3.0.0",
     lastSync: hoursAgo(0.6), health: "healthy", syncFrequency: "Every 10 min", owner: "Marcus Chen",
     apiEndpoint: "https://api.linear.app/graphql (mock)", workspaceName: "qa-portal",
     projectMapping: "Bugs → QAP team cycle", webhookStatus: "active", autoSync: true, notifications: true,
@@ -170,7 +174,7 @@ const initialIntegrations: IntegrationDef[] = [
   },
   {
     id: "sentry", name: "Sentry", description: "Correlate runtime errors with audits and bugs.",
-    icon: BugIcon, brandColor: "text-red-600", status: "connected", version: "v2.9.1",
+    icon: SiSentry, brandColor: "text-[#362D59] dark:text-[#EE8019]", status: "connected", version: "v2.9.1",
     lastSync: hoursAgo(0.9), health: "healthy", syncFrequency: "Real-time", owner: "Sam Whitfield",
     apiEndpoint: "https://sentry.io/api/0 (mock)", workspaceName: "qa-portal-sentry",
     projectMapping: "Audits → qa-portal-webapp project", webhookStatus: "active", autoSync: true, notifications: true,
@@ -210,11 +214,11 @@ interface ActivityRow {
 }
 
 const recentActivity: ActivityRow[] = [
-  { id: 1, text: "GitHub synced repository qa-portal/webapp", integration: "GitHub", time: hoursAgo(0.3), icon: Github },
-  { id: 2, text: "Jira issue QAP-482 imported as new bug", integration: "Jira", time: hoursAgo(1.1), icon: KanbanSquare },
-  { id: 3, text: "Slack notification sent to #qa-alerts", integration: "Slack", time: hoursAgo(0.1), icon: Slack },
+  { id: 1, text: "GitHub synced repository qa-portal/webapp", integration: "GitHub", time: hoursAgo(0.3), icon: SiGithub },
+  { id: 2, text: "Jira issue QAP-482 imported as new bug", integration: "Jira", time: hoursAgo(1.1), icon: SiJira },
+  { id: 3, text: "Slack notification sent to #qa-alerts", integration: "Slack", time: hoursAgo(0.1), icon: SiSlack },
   { id: 4, text: "Azure DevOps pipeline \"release-4.2\" connected", integration: "Azure DevOps", time: hoursAgo(3.4), icon: Workflow },
-  { id: 5, text: "Bitbucket webhook updated for qa-portal-bb", integration: "Bitbucket", time: hoursAgo(240), icon: Waypoints },
+  { id: 5, text: "Bitbucket webhook updated for qa-portal-bb", integration: "Bitbucket", time: hoursAgo(240), icon: SiBitbucket },
   { id: 6, text: "Teams message delivered to QA Automation team", integration: "Microsoft Teams", time: hoursAgo(2.0), icon: MessageSquare },
 ];
 

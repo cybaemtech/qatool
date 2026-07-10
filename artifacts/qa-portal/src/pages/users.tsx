@@ -86,10 +86,10 @@ export default function Users() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
             <ShieldAlert className="h-6 w-6 text-indigo-500" /> User Management
           </h1>
-          <p className="text-slate-500 mt-1">Administer access and roles for the QA portal.</p>
+          <p className="text-muted-foreground mt-1">Administer access and roles for the QA portal.</p>
         </div>
 
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
