@@ -1,0 +1,340 @@
+We have completed the Dashboard, Projects, Audits, Bug Tracker, Reports, Scheduler, Users and Notifications modules.
+
+DO NOT modify or break any existing pages or styling.
+
+Create a brand new "Audit Details" page that opens whenever a user clicks an Audit Run from:
+• Dashboard Recent Activity
+• Audit Runs page
+• Project Details → Audit History
+
+Use the existing design system, cards, spacing, typography, colors and components so it feels like part of the same SaaS application.
+
+====================================================
+PAGE HEADER
+====================================================
+
+Display:
+
+Audit #10
+
+Project Name
+
+Environment Badge
+
+Audit Status
+
+Date & Time
+
+Duration
+
+Run By
+
+Buttons:
+
+← Back
+
+Download PDF
+
+Run Again
+
+Share Report
+
+====================================================
+SUMMARY CARDS
+====================================================
+
+Create responsive summary cards showing
+
+Overall Score
+
+Performance
+
+Accessibility
+
+SEO
+
+Best Practices
+
+Health Score
+
+Bugs Found
+
+Critical Issues
+
+Each card should use proper icons and colored score indicators.
+
+====================================================
+AUDIT TIMELINE
+====================================================
+
+Create a visual audit execution timeline.
+
+Example
+
+✔ Audit Started
+
+✔ Crawling Website
+
+✔ Lighthouse Analysis
+
+✔ Accessibility Scan
+
+✔ Console Analysis
+
+✔ Broken Link Scan
+
+✔ Performance Analysis
+
+✔ AI Analysis
+
+✔ Report Generated
+
+Each item should display timestamp and completion state.
+
+====================================================
+SCORE BREAKDOWN
+====================================================
+
+Create beautiful charts showing
+
+Performance
+
+Accessibility
+
+SEO
+
+Best Practices
+
+Use progress bars or radial charts.
+
+Below each score display:
+
+Strengths
+
+Weaknesses
+
+Suggestions
+
+====================================================
+FOUND BUGS
+====================================================
+
+Display all discovered bugs inside a professional table.
+
+Columns:
+
+Severity
+
+Priority
+
+Title
+
+Category
+
+Page URL
+
+Status
+
+Assigned To
+
+Actions
+
+Allow:
+
+Sort
+
+Search
+
+Filter
+
+Clicking a bug should later navigate to Bug Details page.
+
+====================================================
+CONSOLE ERRORS
+====================================================
+
+Display realistic console logs.
+
+Example
+
+TypeError
+
+ReferenceError
+
+404 Resource
+
+500 API Error
+
+CORS Error
+
+Each row should contain:
+
+Time
+
+Source File
+
+Message
+
+Severity
+
+====================================================
+NETWORK REQUESTS
+====================================================
+
+Display API requests.
+
+Method
+
+URL
+
+Status
+
+Duration
+
+Payload Size
+
+Response Time
+
+Use colored status badges.
+
+====================================================
+SCREENSHOTS
+====================================================
+
+Create screenshot gallery.
+
+Desktop
+
+Tablet
+
+Mobile
+
+Allow preview modal.
+
+Use placeholder screenshots.
+
+====================================================
+AI ANALYSIS
+====================================================
+
+This is the most important section.
+
+Design a premium AI card.
+
+Include:
+
+Overall AI Summary
+
+Likely Root Cause
+
+Confidence Score
+
+Files Probably Affected
+
+Recommended Fixes
+
+Estimated Time To Fix
+
+Risk Level
+
+Priority Recommendation
+
+Display these as AI generated insights using realistic placeholder data.
+
+Use an AI badge.
+
+====================================================
+RECOMMENDATIONS
+====================================================
+
+Create checklist cards.
+
+Example
+
+Improve Largest Contentful Paint
+
+Compress Images
+
+Fix Broken Links
+
+Resolve Console Errors
+
+Add Missing ARIA Labels
+
+Reduce JavaScript Bundle
+
+Each recommendation should include
+
+Priority
+
+Expected Impact
+
+Estimated Fix Time
+
+====================================================
+RIGHT SIDEBAR
+====================================================
+
+Sticky sidebar showing
+
+Project
+
+Audit Number
+
+Environment
+
+Template
+
+Started At
+
+Completed At
+
+Duration
+
+Total URLs
+
+Total Errors
+
+Health Score
+
+====================================================
+BOTTOM ACTIONS
+====================================================
+
+Buttons
+
+Run Audit Again
+
+Generate New Report
+
+Assign Issues
+
+Export JSON
+
+Download PDF
+
+====================================================
+DESIGN REQUIREMENTS
+====================================================
+
+Use existing UI components.
+
+No dark theme.
+
+Fully responsive.
+
+Smooth animations.
+
+Hover states.
+
+Loading skeletons.
+
+Empty states.
+
+Professional spacing.
+
+Premium SaaS appearance.
+
+Do not modify existing functionality.
+
+Only create this page and connect navigation from existing Audit Run entries.

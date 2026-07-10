@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "QA Automation Portal"
+version = "1.0.0"
+id = "artifacts/qa-portal"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18398
+
+[services.development]
+run = "pnpm --filter @workspace/qa-portal run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/qa-portal", "run", "build" ]
+publicDir = "artifacts/qa-portal/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18398"
+BASE_PATH = "/"

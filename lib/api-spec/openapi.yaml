@@ -1,0 +1,1601 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: QA Automation Portal API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: projects
+    description: Project management
+  - name: audits
+    description: Audit runs
+  - name: bugs
+    description: Bug tracking
+  - name: screenshots
+    description: Screenshot management
+  - name: reports
+    description: Report generation
+  - name: dashboard
+    description: Dashboard aggregates
+  - name: scheduled-audits
+    description: Scheduled audit management
+  - name: notifications
+    description: Notification center
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Auth token and user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Users
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create user (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete user (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Projects
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List projects
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: environment
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+        - name: sortDir
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create project
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get project by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update project
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete project
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /projects/{id}/stats:
+    get:
+      operationId: getProjectStats
+      tags: [projects]
+      summary: Get project stats (audit count, bug count, avg score)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectStats"
+
+  /projects/{id}/health-score:
+    get:
+      operationId: getProjectHealthScore
+      tags: [projects]
+      summary: Get overall website health score for a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Health score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthScore"
+
+  /projects/{id}/tech-profile:
+    get:
+      operationId: getProjectTechProfile
+      tags: [projects]
+      summary: Get technology profile for a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Technology profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechProfile"
+    put:
+      operationId: updateProjectTechProfile
+      tags: [projects]
+      summary: Update technology profile for a project
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TechProfile"
+      responses:
+        "200":
+          description: Updated technology profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TechProfile"
+
+  # Audits
+  /audits:
+    get:
+      operationId: listAudits
+      tags: [audits]
+      summary: List audit runs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of audit runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditRun"
+    post:
+      operationId: createAudit
+      tags: [audits]
+      summary: Start a new audit run
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditInput"
+      responses:
+        "201":
+          description: Created audit run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditRun"
+
+  /audits/{id}:
+    get:
+      operationId: getAudit
+      tags: [audits]
+      summary: Get audit run by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditRun"
+
+  /audits/{id}/cancel:
+    post:
+      operationId: cancelAudit
+      tags: [audits]
+      summary: Cancel a running audit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cancelled audit run
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditRun"
+
+  /audits/{id}/ai-analysis:
+    get:
+      operationId: getAuditAiAnalysis
+      tags: [audits]
+      summary: Get AI analysis for an audit (root cause, suggested fixes, risk)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: AI analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditAiAnalysis"
+
+  # Bugs
+  /bugs:
+    get:
+      operationId: listBugs
+      tags: [bugs]
+      summary: List bugs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+        - name: auditRunId
+          in: query
+          schema:
+            type: integer
+        - name: severity
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: priority
+          in: query
+          schema:
+            type: string
+        - name: assignedToId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of bugs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bug"
+
+  /bugs/{id}:
+    get:
+      operationId: getBug
+      tags: [bugs]
+      summary: Get bug by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Bug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bug"
+    patch:
+      operationId: updateBug
+      tags: [bugs]
+      summary: Update bug status or details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BugUpdate"
+      responses:
+        "200":
+          description: Updated bug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bug"
+
+  /bugs/{id}/comments:
+    get:
+      operationId: listBugComments
+      tags: [bugs]
+      summary: List comments on a bug
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BugComment"
+    post:
+      operationId: createBugComment
+      tags: [bugs]
+      summary: Add a comment to a bug
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BugCommentInput"
+      responses:
+        "201":
+          description: Created comment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BugComment"
+
+  # Screenshots
+  /screenshots:
+    get:
+      operationId: listScreenshots
+      tags: [screenshots]
+      summary: List screenshots for an audit run
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: auditRunId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of screenshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Screenshot"
+
+  # Reports
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List reports
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+        - name: auditRunId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+    post:
+      operationId: generateReport
+      tags: [reports]
+      summary: Generate a PDF report for an audit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "201":
+          description: Generated report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  /reports/{id}:
+    get:
+      operationId: getReport
+      tags: [reports]
+      summary: Get report by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  # Scheduled Audits
+  /scheduled-audits:
+    get:
+      operationId: listScheduledAudits
+      tags: [scheduled-audits]
+      summary: List scheduled audits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of scheduled audits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScheduledAudit"
+    post:
+      operationId: createScheduledAudit
+      tags: [scheduled-audits]
+      summary: Create a scheduled audit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduledAuditInput"
+      responses:
+        "201":
+          description: Created scheduled audit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledAudit"
+
+  /scheduled-audits/{id}:
+    get:
+      operationId: getScheduledAudit
+      tags: [scheduled-audits]
+      summary: Get scheduled audit by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scheduled audit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledAudit"
+    patch:
+      operationId: updateScheduledAudit
+      tags: [scheduled-audits]
+      summary: Update a scheduled audit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduledAuditUpdate"
+      responses:
+        "200":
+          description: Updated scheduled audit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledAudit"
+    delete:
+      operationId: deleteScheduledAudit
+      tags: [scheduled-audits]
+      summary: Delete a scheduled audit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Notifications
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/mark-all-read:
+    patch:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  # Dashboard
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get high-level dashboard summary stats
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/audit-trends:
+    get:
+      operationId: getAuditTrends
+      tags: [dashboard]
+      summary: Get audit counts over last 30 days
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Audit trend data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditTrendPoint"
+
+  /dashboard/bug-severity:
+    get:
+      operationId: getBugSeverityDistribution
+      tags: [dashboard]
+      summary: Get bug counts by severity
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Bug severity breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeverityCount"
+
+  /dashboard/performance-history:
+    get:
+      operationId: getPerformanceHistory
+      tags: [dashboard]
+      summary: Get average performance scores over time
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Performance history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PerformancePoint"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Get recent audit and bug activity feed
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    # Auth
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    # Users
+    User:
+      type: object
+      required: [id, email, name, role, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, tester]
+        createdAt:
+          type: string
+          format: date-time
+
+    UserInput:
+      type: object
+      required: [email, name, role, password]
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, tester]
+        password:
+          type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, tester]
+        password:
+          type: string
+
+    # Projects
+    TechProfile:
+      type: object
+      properties:
+        framework:
+          type: ["string", "null"]
+        frontendStack:
+          type: ["string", "null"]
+        backendStack:
+          type: ["string", "null"]
+        cms:
+          type: ["string", "null"]
+        database:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    Project:
+      type: object
+      required: [id, name, url, environment, createdAt, createdById]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        url:
+          type: string
+        environment:
+          type: string
+          enum: [development, staging, production]
+        description:
+          type: ["string", "null"]
+        auditTemplate:
+          type: string
+          enum: [react, vite, nextjs, wordpress, shopify, laravel, nodejs_api, static, custom]
+        techProfile:
+          type: ["object", "null"]
+        createdById:
+          type: integer
+        createdByName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        lastAuditAt:
+          type: ["string", "null"]
+        auditCount:
+          type: integer
+        openBugCount:
+          type: integer
+
+    ProjectInput:
+      type: object
+      required: [name, url, environment]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        environment:
+          type: string
+          enum: [development, staging, production]
+        description:
+          type: string
+        auditTemplate:
+          type: string
+          enum: [react, vite, nextjs, wordpress, shopify, laravel, nodejs_api, static, custom]
+
+    ProjectUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        environment:
+          type: string
+          enum: [development, staging, production]
+        description:
+          type: string
+        auditTemplate:
+          type: string
+          enum: [react, vite, nextjs, wordpress, shopify, laravel, nodejs_api, static, custom]
+
+    ProjectStats:
+      type: object
+      required: [projectId, totalAudits, totalBugs, openBugs, avgPerformanceScore, avgAccessibilityScore, avgSeoScore, avgBestPracticesScore]
+      properties:
+        projectId:
+          type: integer
+        totalAudits:
+          type: integer
+        totalBugs:
+          type: integer
+        openBugs:
+          type: integer
+        avgPerformanceScore:
+          type: ["number", "null"]
+        avgAccessibilityScore:
+          type: ["number", "null"]
+        avgSeoScore:
+          type: ["number", "null"]
+        avgBestPracticesScore:
+          type: ["number", "null"]
+
+    HealthScore:
+      type: object
+      required: [score, status, breakdown]
+      properties:
+        score:
+          type: number
+        status:
+          type: string
+          enum: [excellent, good, warning, critical]
+        breakdown:
+          type: object
+          properties:
+            performance:
+              type: ["number", "null"]
+            accessibility:
+              type: ["number", "null"]
+            seo:
+              type: ["number", "null"]
+            bestPractices:
+              type: ["number", "null"]
+            openBugs:
+              type: integer
+            criticalBugs:
+              type: integer
+
+    # Audits
+    AuditRun:
+      type: object
+      required: [id, projectId, status, createdAt]
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+        startedAt:
+          type: ["string", "null"]
+        completedAt:
+          type: ["string", "null"]
+        durationMs:
+          type: ["integer", "null"]
+        overallScore:
+          type: ["number", "null"]
+        bugsFound:
+          type: integer
+        performanceScore:
+          type: ["number", "null"]
+        accessibilityScore:
+          type: ["number", "null"]
+        seoScore:
+          type: ["number", "null"]
+        bestPracticesScore:
+          type: ["number", "null"]
+        findings:
+          type: ["object", "null"]
+        aiSummary:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        createdById:
+          type: ["integer", "null"]
+
+    AuditInput:
+      type: object
+      required: [projectId]
+      properties:
+        projectId:
+          type: integer
+
+    AuditAiAnalysis:
+      type: object
+      required: [auditRunId, summary, rootCauseAnalysis, suggestedFixes, riskAssessment]
+      properties:
+        auditRunId:
+          type: integer
+        summary:
+          type: string
+        rootCauseAnalysis:
+          type: array
+          items:
+            type: object
+            properties:
+              issue:
+                type: string
+              cause:
+                type: string
+              impact:
+                type: string
+        suggestedFixes:
+          type: array
+          items:
+            type: object
+            properties:
+              fix:
+                type: string
+              priority:
+                type: string
+              effort:
+                type: string
+        riskAssessment:
+          type: object
+          properties:
+            level:
+              type: string
+              enum: [low, medium, high, critical]
+            summary:
+              type: string
+            factors:
+              type: array
+              items:
+                type: string
+
+    # Bugs
+    Bug:
+      type: object
+      required: [id, projectId, auditRunId, title, severity, status, priority, createdAt]
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        auditRunId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [open, in_progress, resolved, ignored]
+        priority:
+          type: string
+          enum: [critical, high, medium, low]
+        assignedToId:
+          type: ["integer", "null"]
+        assignedToName:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+          format: date-time
+        resolutionNotes:
+          type: ["string", "null"]
+        screenshotUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    BugUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [open, in_progress, resolved, ignored]
+        priority:
+          type: string
+          enum: [critical, high, medium, low]
+        assignedToId:
+          type: ["integer", "null"]
+        dueDate:
+          type: ["string", "null"]
+        resolutionNotes:
+          type: string
+
+    BugComment:
+      type: object
+      required: [id, bugId, userId, content, createdAt]
+      properties:
+        id:
+          type: integer
+        bugId:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: ["string", "null"]
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    BugCommentInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+
+    # Screenshots
+    Screenshot:
+      type: object
+      required: [id, auditRunId, deviceType, dataUrl, createdAt]
+      properties:
+        id:
+          type: integer
+        auditRunId:
+          type: integer
+        deviceType:
+          type: string
+          enum: [desktop, tablet, mobile]
+        dataUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    # Reports
+    Report:
+      type: object
+      required: [id, projectId, auditRunId, status, createdAt]
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        auditRunId:
+          type: integer
+        status:
+          type: string
+          enum: [generating, ready, failed]
+        fileUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ReportInput:
+      type: object
+      required: [auditRunId]
+      properties:
+        auditRunId:
+          type: integer
+
+    # Scheduled Audits
+    ScheduledAudit:
+      type: object
+      required: [id, name, projectId, frequency, hour, status, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        projectId:
+          type: integer
+        projectName:
+          type: ["string", "null"]
+        createdById:
+          type: ["integer", "null"]
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+        hour:
+          type: integer
+        status:
+          type: string
+          enum: [active, paused, disabled]
+        nextRunAt:
+          type: ["string", "null"]
+          format: date-time
+        lastRunAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    ScheduledAuditInput:
+      type: object
+      required: [name, projectId, frequency, hour]
+      properties:
+        name:
+          type: string
+        projectId:
+          type: integer
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+        hour:
+          type: integer
+        status:
+          type: string
+          enum: [active, paused, disabled]
+
+    ScheduledAuditUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly]
+        hour:
+          type: integer
+        status:
+          type: string
+          enum: [active, paused, disabled]
+
+    # Notifications
+    Notification:
+      type: object
+      required: [id, userId, type, title, message, read, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+          enum: [audit_completed, audit_failed, critical_issue, project_added, bug_assigned]
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        relatedId:
+          type: ["integer", "null"]
+        relatedType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    # Dashboard
+    DashboardSummary:
+      type: object
+      required: [totalProjects, totalAudits, totalBugs, criticalIssues, avgPerformanceScore]
+      properties:
+        totalProjects:
+          type: integer
+        totalAudits:
+          type: integer
+        totalBugs:
+          type: integer
+        criticalIssues:
+          type: integer
+        avgPerformanceScore:
+          type: ["number", "null"]
+
+    AuditTrendPoint:
+      type: object
+      required: [date, count]
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+
+    SeverityCount:
+      type: object
+      required: [severity, count]
+      properties:
+        severity:
+          type: string
+        count:
+          type: integer
+
+    PerformancePoint:
+      type: object
+      required: [date, performance, accessibility, seo, bestPractices]
+      properties:
+        date:
+          type: string
+        performance:
+          type: ["number", "null"]
+        accessibility:
+          type: ["number", "null"]
+        seo:
+          type: ["number", "null"]
+        bestPractices:
+          type: ["number", "null"]
+
+    ActivityItem:
+      type: object
+      required: [id, type, title, description, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [audit_completed, audit_failed, bug_found, bug_resolved, project_created]
+        title:
+          type: string
+        description:
+          type: string
+        projectId:
+          type: ["integer", "null"]
+        projectName:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time

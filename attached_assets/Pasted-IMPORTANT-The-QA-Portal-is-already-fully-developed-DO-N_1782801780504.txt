@@ -1,0 +1,457 @@
+IMPORTANT
+
+The QA Portal is already fully developed.
+
+DO NOT redesign the application.
+
+DO NOT regenerate existing pages.
+
+DO NOT remove any components.
+
+DO NOT modify routing.
+
+DO NOT replace the Dashboard, Projects, Bug Tracker, Users, Reports, Schedules or Audit pages.
+
+Everything currently working must remain exactly as it is.
+
+This task is ONLY to enhance the existing Audit Details page and make it enterprise-grade while preserving the current design language, layout, colors, typography, cards, spacing and responsiveness.
+
+Treat this as Version 2.0 of the current product.
+
+------------------------------------------------------------
+
+OBJECTIVE
+
+Enhance the existing Audit Details page with premium enterprise features while keeping every existing section intact.
+
+The current sections such as:
+
+• Audit Timeline
+• Audit Information
+• Scores
+• Score Breakdown
+• Console Errors
+• Network Requests
+• Screenshot Gallery
+• AI Analysis
+• Recommendations
+
+must remain exactly where they are.
+
+Only enhance them.
+
+------------------------------------------------------------
+
+ENHANCEMENT 1
+
+Interactive Score Cards
+
+Existing score cards should become interactive.
+
+Clicking Performance smoothly scrolls to Performance Breakdown.
+
+Clicking Accessibility scrolls to Accessibility section.
+
+Clicking SEO scrolls to SEO section.
+
+Clicking Best Practices scrolls to Best Practices.
+
+Cards should animate slightly on hover.
+
+------------------------------------------------------------
+
+ENHANCEMENT 2
+
+Health Score
+
+The existing Health Score card should become more intelligent.
+
+Show
+
+Overall Status
+
+Excellent
+
+Good
+
+Needs Attention
+
+Critical
+
+Add
+
+Trend
+
+▲ Improved by 8%
+
+or
+
+▼ Dropped by 12%
+
+compared with previous audit.
+
+Add confidence meter.
+
+------------------------------------------------------------
+
+ENHANCEMENT 3
+
+Audit Timeline
+
+Keep existing timeline.
+
+Enhance it with
+
+animated progress line
+
+status icons
+
+duration badges
+
+expandable events
+
+technical logs
+
+timestamps
+
+clickable stages
+
+Each stage can expand to reveal detailed execution logs.
+
+------------------------------------------------------------
+
+ENHANCEMENT 4
+
+Score Breakdown
+
+Keep existing tabs.
+
+Enhance every category with
+
+overall score
+
+comparison with previous audit
+
+industry benchmark
+
+estimated improvement potential
+
+interactive charts
+
+progress animation
+
+impact level
+
+estimated effort
+
+difficulty
+
+quick wins
+
+priority indicator
+
+------------------------------------------------------------
+
+ENHANCEMENT 5
+
+Console Errors
+
+Keep existing table.
+
+Enhance with
+
+search
+
+severity filters
+
+copy stack trace
+
+expand row
+
+error explanation
+
+AI explanation
+
+possible cause
+
+likely affected file
+
+recommended fix
+
+estimated impact
+
+------------------------------------------------------------
+
+ENHANCEMENT 6
+
+Network Requests
+
+Enhance current table.
+
+Include
+
+waterfall timing
+
+response preview
+
+headers
+
+payload
+
+response size
+
+compression ratio
+
+cache status
+
+failed requests highlight
+
+slow requests highlight
+
+retry suggestion
+
+------------------------------------------------------------
+
+ENHANCEMENT 7
+
+Performance Insights
+
+New section.
+
+Generate intelligent insights.
+
+Examples
+
+Large JavaScript bundle
+
+Unused CSS
+
+Long Tasks
+
+Layout Shift
+
+Large Images
+
+Third-party scripts
+
+Each issue should contain
+
+Description
+
+Impact
+
+Estimated savings
+
+Priority
+
+Fix suggestion
+
+Estimated development effort
+
+------------------------------------------------------------
+
+ENHANCEMENT 8
+
+AI Root Cause Analysis
+
+Upgrade existing AI Analysis.
+
+Create premium AI cards.
+
+Overall Summary
+
+Root Cause
+
+Technical Explanation
+
+Business Impact
+
+Confidence
+
+Risk Level
+
+Affected Components
+
+Regression Risk
+
+Suggested Developer
+
+Estimated Fix Time
+
+Estimated QA Time
+
+------------------------------------------------------------
+
+ENHANCEMENT 9
+
+Recommendations
+
+Keep existing recommendation list.
+
+Improve each item.
+
+Priority
+
+Business Impact
+
+Development Time
+
+Difficulty
+
+Expected Score Improvement
+
+One-click mark completed
+
+Progress indicator
+
+------------------------------------------------------------
+
+ENHANCEMENT 10
+
+Historical Comparison
+
+New section.
+
+Compare
+
+Current Audit
+
+Previous Audit
+
+Best Audit
+
+Average Audit
+
+Show
+
+Performance
+
+Accessibility
+
+SEO
+
+Best Practices
+
+Health Score
+
+Bug Count
+
+Charts should animate.
+
+------------------------------------------------------------
+
+ENHANCEMENT 11
+
+Developer Insights
+
+New card.
+
+Display
+
+Files likely affected
+
+Components involved
+
+Possible dependencies
+
+Regression probability
+
+Testing recommendation
+
+Deployment recommendation
+
+------------------------------------------------------------
+
+ENHANCEMENT 12
+
+Smart Actions
+
+Instead of static buttons
+
+Run Again
+
+Generate Report
+
+Assign Issues
+
+Export JSON
+
+Share Report
+
+turn them into smart actions.
+
+Each action should display
+
+tooltip
+
+loading animation
+
+success animation
+
+toast notification
+
+------------------------------------------------------------
+
+ENHANCEMENT 13
+
+Quick Fix Dashboard
+
+Add a new card
+
+Top 5 improvements
+
+Estimated score gain
+
+Estimated time
+
+Difficulty
+
+Priority
+
+Expected impact
+
+------------------------------------------------------------
+
+ENHANCEMENT 14
+
+Visual Polish
+
+Improve
+
+hover animations
+
+smooth scrolling
+
+loading skeletons
+
+animated counters
+
+micro interactions
+
+progress animations
+
+better empty states
+
+professional shadows
+
+consistent spacing
+
+premium transitions
+
+without changing the existing design language.
+
+------------------------------------------------------------
+
+IMPORTANT
+
+Do NOT remove any existing functionality.
+
+Do NOT redesign the portal.
+
+Only enhance what already exists.
+
+Every enhancement must integrate naturally into the current application.
+
+The final result should feel like an enterprise SaaS product used by companies such as Microsoft, Google, Atlassian or GitHub.
+
+Maintain clean React architecture, reusable components, proper TypeScript types, responsive layouts and performance optimizations.

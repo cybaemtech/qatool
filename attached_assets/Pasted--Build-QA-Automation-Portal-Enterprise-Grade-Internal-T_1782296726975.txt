@@ -1,0 +1,426 @@
+# Build QA Automation Portal (Enterprise-Grade Internal Testing Platform)
+
+Create a modern SaaS-style QA Automation Portal for internal use by web developers and testers.
+
+## Objective
+
+The platform should allow testers to add website/web app projects, run automated audits, detect bugs/issues automatically, generate reports, capture screenshots, and track historical test results.
+
+The system should be production-ready, scalable, responsive, and visually modern.
+
+---
+
+# Tech Stack
+
+Frontend:
+
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* Shadcn UI
+* React Query
+* Recharts
+
+Backend:
+
+* Node.js
+* Express
+
+Database:
+
+* PostgreSQL
+
+Authentication:
+
+* JWT Authentication
+* Role Based Access Control
+
+Roles:
+
+* Admin
+* Tester
+
+Testing Engine:
+
+* Playwright
+* Lighthouse
+
+Reporting:
+
+* PDF generation
+
+AI Integration Architecture:
+
+* OpenAI-ready integration layer (do not hardcode keys)
+
+Deployment Ready:
+
+* Environment variables
+* Production build configuration
+
+---
+
+# Design Requirements
+
+Create a premium modern UI.
+
+Theme:
+
+* Light theme
+* Clean enterprise design
+* Apple-level polish
+* Smooth animations
+* Professional dashboard
+
+Dashboard should feel similar to:
+
+* Linear
+* Vercel
+* Notion
+* Stripe Dashboard
+
+No generic admin template appearance.
+
+---
+
+# Authentication Module
+
+Features:
+
+* Login
+* Logout
+* Protected Routes
+* Role-based access
+
+Admin:
+
+* Manage users
+* Manage projects
+* View all reports
+
+Tester:
+
+* Run audits
+* View assigned projects
+* Download reports
+
+---
+
+# Dashboard
+
+Display:
+
+* Total Projects
+* Total Audits
+* Total Bugs Found
+* Critical Issues
+* Performance Score Average
+
+Charts:
+
+* Audit Trends
+* Bug Severity Distribution
+* Performance History
+
+Recent Activity Feed
+
+---
+
+# Project Management
+
+Allow:
+
+Create Project
+
+Fields:
+
+* Project Name
+
+* Project URL
+
+* Environment
+
+  * Development
+  * Staging
+  * Production
+
+* Description
+
+* Created By
+
+Project List:
+
+* Search
+* Filter
+* Sort
+
+Project Detail Page
+
+Show:
+
+* Project Information
+* Audit History
+* Bug History
+* Screenshots
+* Reports
+
+---
+
+# Audit Engine
+
+Create a Run Audit button.
+
+When clicked:
+
+Execute Playwright-based automated testing.
+
+Audit Workflow:
+
+1. Open website
+2. Verify homepage loads
+3. Capture screenshot
+4. Detect console errors
+5. Detect failed network requests
+6. Test navigation links
+7. Detect broken links
+8. Test forms
+9. Check responsiveness
+10. Generate findings
+
+Store all results in database.
+
+---
+
+# Playwright Audit Features
+
+Homepage Test
+
+Check:
+
+* Page loads successfully
+* No critical browser errors
+
+Navigation Test
+
+Detect:
+
+* Broken links
+* Invalid redirects
+* 404 pages
+
+Form Validation Test
+
+Detect:
+
+* Missing validation
+* Submit failures
+
+Console Error Scanner
+
+Capture:
+
+* JavaScript errors
+* React errors
+* Runtime exceptions
+
+Network Scanner
+
+Detect:
+
+* Failed API calls
+* 4xx errors
+* 5xx errors
+
+Screenshot Capture
+
+Capture:
+
+* Desktop
+* Tablet
+* Mobile
+
+Store screenshots per audit.
+
+---
+
+# Lighthouse Integration
+
+Run Lighthouse automatically.
+
+Capture:
+
+* Performance Score
+* Accessibility Score
+* SEO Score
+* Best Practices Score
+
+Store results historically.
+
+Show trends over time.
+
+---
+
+# Bug Detection System
+
+Create Bug entity.
+
+Fields:
+
+* Bug ID
+* Project
+* Audit Run
+* Title
+* Description
+* Severity
+* Screenshot
+* Status
+
+Severity:
+
+* Critical
+* High
+* Medium
+* Low
+
+Status:
+
+* Open
+* In Progress
+* Resolved
+* Ignored
+
+---
+
+# AI Analysis Layer
+
+Create architecture for OpenAI integration.
+
+When enabled:
+
+AI should:
+
+* Analyze audit findings
+* Explain probable root causes
+* Suggest fixes
+* Prioritize issues
+
+Generate AI Summary section.
+
+Do not hardcode API keys.
+
+Use environment variables.
+
+---
+
+# Reports Module
+
+Generate PDF reports.
+
+Include:
+
+* Project Details
+* Audit Date
+* Scores
+* Issues Found
+* Severity Breakdown
+* Screenshots
+* Recommendations
+
+Allow:
+
+* Download PDF
+* View Online
+
+---
+
+# Audit History
+
+Store all audit runs.
+
+Display:
+
+* Audit Date
+* Duration
+* Score
+* Bugs Found
+
+Allow comparison between audits.
+
+---
+
+# Notification System Architecture
+
+Prepare architecture for:
+
+* Email alerts
+* Slack alerts
+
+Triggers:
+
+* Critical issue detected
+* Audit completed
+
+No need to fully implement external integrations initially.
+
+---
+
+# Database Schema
+
+Create proper normalized PostgreSQL schema for:
+
+Users
+Projects
+AuditRuns
+Bugs
+Screenshots
+Reports
+AuditMetrics
+
+Include relationships and indexes.
+
+---
+
+# Security
+
+Implement:
+
+* JWT authentication
+* Password hashing
+* Input validation
+* Rate limiting
+* Secure API structure
+
+---
+
+# Code Quality
+
+Requirements:
+
+* Modular architecture
+* Clean folder structure
+* Reusable components
+* Service layer pattern
+* Type-safe APIs
+* Error handling
+* Loading states
+* Empty states
+
+---
+
+# Deliverables
+
+Generate:
+
+1. Full application architecture
+2. Database schema
+3. Backend API routes
+4. React frontend
+5. Dashboard UI
+6. Audit engine integration
+7. Lighthouse integration
+8. PDF reporting
+9. Authentication system
+10. Seed data for testing
+
+The application must be functional, production-ready, and capable of auditing real websites and web applications.

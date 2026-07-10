@@ -1,0 +1,227 @@
+# Replit Enhancement Prompt - QA Automation Portal V2
+
+The current QA Automation Portal UI is complete. Do NOT redesign the existing UI.
+
+Focus on implementing advanced enterprise functionality and preparing the platform for real audit execution and AI integration.
+
+## Add Audit Templates
+
+Create audit templates that users can select before running an audit.
+
+Templates:
+
+* React Application
+* Vite Application
+* Next.js Application
+* WordPress Website
+* Shopify Store
+* Laravel Application
+* Node.js API
+* Static Website
+* Custom Application
+
+Store selected template per project.
+
+Show template information in project details.
+
+---
+
+## Website Health Engine
+
+Create an overall Website Health Score.
+
+Calculation should consider:
+
+* Performance Score
+* SEO Score
+* Accessibility Score
+* Best Practices Score
+* Open Bugs
+* Critical Bugs
+
+Display:
+
+* Overall Health Score
+* Health Status
+
+  * Excellent
+  * Good
+  * Warning
+  * Critical
+
+Show trends over time.
+
+---
+
+## Screenshot Management
+
+Create screenshot management system.
+
+Support:
+
+* Desktop Screenshot
+* Tablet Screenshot
+* Mobile Screenshot
+
+Audit Detail Page should display:
+
+* Screenshot Gallery
+* Full Screen Preview
+* Before/After Comparison Ready Architecture
+
+Prepare backend structure for screenshot storage.
+
+---
+
+## Audit Scheduling
+
+Add Scheduled Audits.
+
+Support:
+
+* Daily
+* Weekly
+* Monthly
+
+Fields:
+
+* Schedule Name
+* Project
+* Frequency
+* Time
+* Status
+
+Create Scheduled Audits page.
+
+Display next execution time.
+
+---
+
+## Team Collaboration
+
+Enhance Bug Tracker.
+
+Add:
+
+* Assigned User
+* Due Date
+* Priority
+* Comments
+* Resolution Notes
+
+Priority Levels:
+
+* Critical
+* High
+* Medium
+* Low
+
+Allow assigning bugs to users.
+
+---
+
+## Notification Center
+
+Create notification system.
+
+Events:
+
+* Audit Completed
+* Audit Failed
+* Critical Issue Found
+* New Project Added
+* Bug Assigned
+
+Add notification bell in top navigation.
+
+Create notifications page.
+
+---
+
+## Technology Detection
+
+Create project technology profile.
+
+Store:
+
+* Framework
+* Frontend Stack
+* Backend Stack
+* CMS
+* Database
+
+Display on Project Details page.
+
+Prepare architecture for automatic technology detection.
+
+---
+
+## PDF Report Center
+
+Enhance reports.
+
+Add:
+
+* Report Preview
+* Report History
+* Shareable Report Link
+* Download PDF
+
+Include:
+
+* Audit Results
+* Bugs
+* Screenshots
+* AI Summary
+
+---
+
+## AI Ready Architecture
+
+Prepare dedicated AI panels.
+
+Audit Details should include:
+
+* AI Audit Summary
+* AI Root Cause Analysis
+* AI Suggested Fixes
+* AI Risk Assessment
+
+Use placeholder data for now.
+
+These sections will later connect to an external AI service.
+
+---
+
+## Real Audit Integration Preparation
+
+Prepare backend architecture for:
+
+* Playwright
+* Lighthouse
+* AI Bug Analyzer API
+
+Do not use mock-only architecture.
+
+Create service layers and interfaces that can later connect to real engines.
+
+---
+
+## Database Updates
+
+Create entities for:
+
+* Scheduled Audits
+* Notifications
+* Comments
+* Bug Assignments
+* Technology Profiles
+* Screenshots
+
+Use proper relationships.
+
+---
+
+## Goal
+
+Transform the current QA Automation Portal from a dashboard prototype into a production-ready QA management platform prepared for Playwright, Lighthouse, and AI integration.

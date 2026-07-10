@@ -1,0 +1,1 @@
+- [Orval schema naming collision](orval-collision.md) — `*Body` suffix in OpenAPI schema names causes Orval to export Zod validators AND TS types with the same name; use `*Input`/`*Update` instead.
