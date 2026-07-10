@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { FileText, Download, Activity, FileCheck } from "lucide-react";
+import { FileText, Download, Activity, FileCheck, FileBarChart2 } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -13,9 +13,17 @@ export default function Reports() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Reports</h1>
-        <p className="text-muted-foreground mt-1">Generated compliance and quality reports.</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">Reports</h1>
+          <p className="text-muted-foreground mt-1">Generated compliance and quality reports.</p>
+        </div>
+        <Link href="/reports/executive">
+          <Button className="gap-2 shrink-0">
+            <FileBarChart2 className="h-4 w-4" />
+            Executive Report Center
+          </Button>
+        </Link>
       </div>
 
       <Card className="shadow-sm border-border overflow-x-auto">

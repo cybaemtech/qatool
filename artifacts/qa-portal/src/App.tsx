@@ -22,6 +22,7 @@ import Schedules from "@/pages/schedules";
 import Integrations from "@/pages/integrations";
 import Notifications from "@/pages/notifications";
 import LiveAuditScanner from "@/pages/live-audit-scanner";
+import ExecutiveReportCenter from "@/pages/executive-report-center";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +93,12 @@ function AppRouter() {
       <Route path="/bugs">
         <ProtectedRoute>
           <Layout><Bugs /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/reports/executive">
+        <ProtectedRoute>
+          <Layout><ExecutiveReportCenter /></Layout>
         </ProtectedRoute>
       </Route>
 

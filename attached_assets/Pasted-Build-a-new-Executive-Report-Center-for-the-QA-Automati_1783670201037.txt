@@ -1,0 +1,147 @@
+Build a new "Executive Report Center" for the QA Automation Portal.
+
+IMPORTANT:
+- Reuse the existing audit data, charts, AI summaries, screenshots, score cards, projects and dummy data.
+- Do NOT redesign existing pages.
+- Do NOT change authentication.
+- Do NOT change database schema.
+- Do NOT remove any current functionality.
+- Follow the existing enterprise design system exactly.
+- This is a UI enhancement only. Do not implement real PDF generation yet.
+
+========================
+REPORT CENTER
+========================
+
+Create a new page called "Executive Report Center" accessible from the Reports section.
+
+The page should look like a premium enterprise report preview.
+
+Sections:
+
+1. Executive Summary
+Show:
+- Overall Health Score
+- Performance
+- Accessibility
+- SEO
+- Best Practices
+- Total Bugs
+- Critical Issues
+- Audit Duration
+- Last Scan
+- AI Confidence
+
+2. AI Executive Summary
+
+Generate a professional management summary like:
+
+"Overall application health is Good (85/100). Two critical issues require immediate attention while overall SEO and Accessibility remain healthy. Addressing the highlighted recommendations is expected to improve the overall health score above 90."
+
+Reuse existing dummy audit values.
+
+3. KPI Cards
+
+Display existing statistics:
+
+Projects
+Audits
+Open Bugs
+Critical Issues
+Avg Health
+Release Readiness
+
+Reuse current dashboard cards.
+
+4. Charts
+
+Reuse existing charts instead of creating new ones:
+
+- Audit Trend
+- Health Trend
+- Performance Trend
+- Risk Distribution
+- Environment Distribution
+
+5. Top Issues
+
+Display the highest priority findings in a clean executive table.
+
+Columns:
+
+Severity
+Issue
+Affected Project
+Impact
+Estimated Fix Time
+Owner
+Status
+
+Use existing dummy data.
+
+6. AI Recommendations
+
+Reuse recommendations already generated inside AI Copilot.
+
+Group into:
+
+Immediate
+High Priority
+Medium Priority
+Low Priority
+
+7. Project Health Ranking
+
+Display projects ranked by health score.
+
+Columns:
+
+Project
+Health
+Open Bugs
+Critical
+Last Audit
+Trend
+
+Reuse existing project data.
+
+8. Executive Notes
+
+Professional read-only notes section for management.
+
+Example:
+
+• Release can proceed after resolving 2 critical issues.
+• SEO score has improved 12% over previous audit.
+• Accessibility remains stable.
+• AI confidence is High.
+
+9. Export Actions (UI only)
+
+Buttons:
+
+Export PDF
+Export Excel
+Print Report
+Share Report
+
+These should only display toast notifications such as:
+
+"PDF export will be available in the next release."
+
+No backend implementation.
+
+10. Polish
+
+Add subtle animations.
+Keep spacing consistent.
+Fully responsive.
+Support dark/light mode.
+Reuse existing cards and components wherever possible.
+
+IMPORTANT:
+Do NOT build actual PDF generation.
+Do NOT create APIs.
+Do NOT modify authentication.
+Do NOT duplicate existing dashboards.
+Create this as a premium executive report preview page using existing data.
