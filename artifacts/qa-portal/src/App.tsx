@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
+import ExecutiveDashboard from "@/pages/executive-dashboard";
 import Projects from "@/pages/projects";
 import ProjectNew from "@/pages/project-new";
 import ProjectDetail from "@/pages/project-detail";
@@ -41,6 +42,12 @@ function AppRouter() {
       <Route path="/dashboard">
         <ProtectedRoute>
           <Layout><Dashboard /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/executive-dashboard">
+        <ProtectedRoute>
+          <Layout><ExecutiveDashboard /></Layout>
         </ProtectedRoute>
       </Route>
 

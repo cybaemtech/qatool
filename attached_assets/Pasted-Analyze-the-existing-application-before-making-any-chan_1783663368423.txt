@@ -1,0 +1,86 @@
+Analyze the existing application before making any changes.
+
+Do NOT modify, redesign, or break any existing pages, components, routing, APIs, database logic, audit logic, reports, AI Copilot, or mock/demo data.
+
+Create a brand-new page called "Executive Dashboard" and add it to the sidebar navigation.
+
+The Executive Dashboard should provide a high-level business overview for managers and CTOs using the existing mock/demo data.
+
+Include the following sections:
+
+1. Executive KPI Cards
+- Overall Portfolio Health
+- Total Projects
+- Total Audits
+- Critical Issues
+- Average Health Score
+- Audit Success Rate
+- Total Open Bugs
+- AI Confidence Score
+
+2. Portfolio Overview
+- Health distribution across all projects
+- Risk distribution (Low / Medium / High)
+- Environment distribution (Production / Staging / Development)
+
+3. Trends
+- Audit trend over the last 30 days
+- Performance trend
+- Accessibility trend
+- SEO trend
+- Best Practices trend
+
+4. AI Executive Summary
+Generate a professional executive summary using the existing audit data, highlighting:
+- Overall system health
+- Highest-risk projects
+- Biggest improvements
+- Recommended priorities
+- Overall release readiness
+
+5. Top Risky Projects
+Display the top 5 projects with:
+- Health Score
+- Open Bugs
+- Critical Issues
+- Last Audit
+- Quick View button
+
+6. Team Productivity
+Show:
+- Audits completed this week
+- Reports generated
+- Bugs resolved
+- Average audit duration
+- Estimated developer hours saved
+
+7. Priority Actions
+Display the top recommended actions ranked by business impact, estimated effort, and expected score improvement.
+
+8. Recent Activity Timeline
+Show recent audits, reports, bug assignments, and scheduled audits.
+
+9. Quick Actions
+Include buttons for:
+- Run New Audit
+- View Projects
+- View Reports
+- Open Bug Tracker
+- Open AI Copilot
+
+Requirements:
+- Follow the existing design system exactly.
+- Reuse existing UI components wherever possible.
+- Use responsive layouts.
+- Add subtle Framer Motion animations consistent with the rest of the application.
+- Use existing mock/demo data only.
+- If any data is unavailable, derive it from existing mock data instead of creating unrelated dummy data.
+- Do not duplicate code.
+- Keep the implementation modular.
+- Ensure the project builds successfully without affecting existing functionality.
+
+At the end, provide a summary of:
+- Files created
+- Files modified
+- Any reusable components added
+- Confirmation that all existing pages and mock/demo data remain unchanged.

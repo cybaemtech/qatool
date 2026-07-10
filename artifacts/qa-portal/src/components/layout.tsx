@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useListNotifications, getListNotificationsQueryKey } from "@workspace/api-client-react";
-import { Loader2, Activity, LayoutDashboard, Folder, Bug, FileText, Users, Settings, LogOut, CalendarClock, Bell } from "lucide-react";
+import { Loader2, Activity, LayoutDashboard, Folder, Bug, FileText, Users, Settings, LogOut, CalendarClock, Bell, Briefcase } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -50,6 +50,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Executive Dashboard', href: '/executive-dashboard', icon: Briefcase },
     { name: 'Projects', href: '/projects', icon: Folder },
     { name: 'Audits', href: '/audits', icon: Activity },
     { name: 'Bugs', href: '/bugs', icon: Bug },
