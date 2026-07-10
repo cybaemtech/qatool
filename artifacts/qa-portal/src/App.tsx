@@ -21,6 +21,7 @@ import Settings from "@/pages/settings";
 import Schedules from "@/pages/schedules";
 import Integrations from "@/pages/integrations";
 import Notifications from "@/pages/notifications";
+import LiveAuditScanner from "@/pages/live-audit-scanner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +68,12 @@ function AppRouter() {
       <Route path="/projects">
         <ProtectedRoute>
           <Layout><Projects /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/audits/live/:auditId">
+        <ProtectedRoute>
+          <Layout><LiveAuditScanner /></Layout>
         </ProtectedRoute>
       </Route>
 

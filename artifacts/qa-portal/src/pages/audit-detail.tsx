@@ -494,9 +494,8 @@ export default function AuditDetail() {
     if (!audit) return;
     createAuditMutation.mutate({ data: { projectId: audit.projectId } }, {
       onSuccess: (data) => {
-        toast({ title: "New audit started", description: "Redirecting to the new audit…" });
         queryClient.invalidateQueries({ queryKey: getListAuditsQueryKey({ projectId: audit.projectId }) });
-        setLocation(`/audits/${data.id}`);
+        setLocation(`/audits/live/${data.id}`);
       },
     });
   };

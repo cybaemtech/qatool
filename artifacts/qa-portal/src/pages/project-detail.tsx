@@ -30,7 +30,6 @@ import { Link } from "wouter";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { LiveAuditModal } from "@/components/live-audit-modal";
 
 const TEMPLATE_LABELS: Record<string, string> = {
   react: "React", vite: "Vite", nextjs: "Next.js", wordpress: "WordPress",
@@ -51,8 +50,6 @@ export default function ProjectDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [techForm, setTechForm] = useState<Record<string, string> | null>(null);
-  const [liveAuditId, setLiveAuditId] = useState<number | null>(null);
-  const [liveModalOpen, setLiveModalOpen] = useState(false);
 
   const { data: project, isLoading: isProjectLoading } = useGetProject(projectId);
   const { data: stats } = useGetProjectStats(projectId);
@@ -68,10 +65,8 @@ export default function ProjectDetail() {
       { data: { projectId } },
       {
         onSuccess: (data) => {
-          toast({ title: "Audit started" });
           queryClient.invalidateQueries({ queryKey: getListAuditsQueryKey({ projectId }) });
-          setLiveAuditId(data.id);
-          setLiveModalOpen(true);
+          setLocation(`/audits/live/${data.id}`);
         },
         onError: (err: unknown) => toast({ title: "Failed to start audit", description: (err as Error).message, variant: "destructive" }),
       }
@@ -314,12 +309,6 @@ export default function ProjectDetail() {
         </TabsContent>
       </Tabs>
 
-      <LiveAuditModal
-        open={liveModalOpen}
-        auditId={liveAuditId}
-        projectUrl={project.url}
-        onOpenChange={setLiveModalOpen}
-      />
     </div>
   );
 }
