@@ -94,7 +94,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Audit Trends */}
-        <Card className="col-span-1 lg:col-span-2 shadow-sm border-slate-200">
+        <Card className="col-span-1 lg:col-span-2 shadow-sm border-border">
           <CardHeader>
             <CardTitle>Audit Runs (30 Days)</CardTitle>
           </CardHeader>
@@ -137,14 +137,14 @@ export default function Dashboard() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400">No data available</div>
+                <div className="h-full flex items-center justify-center text-muted-foreground">No data available</div>
               )}
             </motion.div>
           </CardContent>
         </Card>
 
         {/* Bug Severity */}
-        <Card className="col-span-1 shadow-sm border-slate-200">
+        <Card className="col-span-1 shadow-sm border-border">
           <CardHeader>
             <CardTitle>Open Bugs by Severity</CardTitle>
           </CardHeader>
@@ -179,7 +179,7 @@ export default function Dashboard() {
                     <Legend 
                       verticalAlign="bottom" 
                       height={36}
-                      formatter={(value) => <span className="capitalize text-slate-600 text-sm font-medium">{value}</span>}
+                      formatter={(value) => <span className="capitalize text-muted-foreground text-sm font-medium">{value}</span>}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -193,7 +193,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Performance History */}
-        <Card className="col-span-1 xl:col-span-2 shadow-sm border-slate-200">
+        <Card className="col-span-1 xl:col-span-2 shadow-sm border-border">
           <CardHeader>
             <CardTitle>Performance History</CardTitle>
           </CardHeader>
@@ -235,14 +235,14 @@ export default function Dashboard() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400">No data available</div>
+                <div className="h-full flex items-center justify-center text-muted-foreground">No data available</div>
               )}
             </motion.div>
           </CardContent>
         </Card>
 
         {/* Recent Activity */}
-        <Card className="col-span-1 shadow-sm border-slate-200 flex flex-col">
+        <Card className="col-span-1 shadow-sm border-border flex flex-col">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
@@ -253,7 +253,7 @@ export default function Dashboard() {
                   <div key={item.id} className="flex gap-4 relative">
                     {/* Connection line */}
                     {i !== activity.length - 1 && (
-                      <div className="absolute left-[11px] top-8 bottom-[-24px] w-[2px] bg-slate-100" />
+                      <div className="absolute left-[11px] top-8 bottom-[-24px] w-[2px] bg-border" />
                     )}
                     
                     <div className="flex-shrink-0 mt-1">
@@ -264,10 +264,10 @@ export default function Dashboard() {
                       {item.type === 'project_created' && <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center"><Folder className="w-3 h-3 text-blue-600" /></div>}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                      <p className="text-sm text-slate-500 mt-0.5">{item.description}</p>
+                      <p className="text-sm font-medium text-foreground">{item.title}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{item.description}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-slate-400">{format(new Date(item.createdAt), 'MMM d, h:mm a')}</span>
+                        <span className="text-xs text-muted-foreground">{format(new Date(item.createdAt), 'MMM d, h:mm a')}</span>
                         {item.severity && (
                           <SeverityBadge severity={item.severity} />
                         )}
@@ -277,7 +277,7 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-slate-400">No recent activity</div>
+              <div className="h-full flex items-center justify-center text-muted-foreground">No recent activity</div>
             )}
           </CardContent>
         </Card>
