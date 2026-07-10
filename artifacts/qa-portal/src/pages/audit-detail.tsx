@@ -41,6 +41,7 @@ import {
 import { Link } from "wouter";
 import { format, addSeconds } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { AiCopilotPanel } from "@/components/ai-copilot-panel";
 import { cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -1448,6 +1449,14 @@ export default function AuditDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* ── AI Copilot ────────────────────────────────────────────────── */}
+            <AiCopilotPanel
+              audit={audit}
+              aiAnalysis={aiAnalysis}
+              bugs={bugs}
+              consoleErrors={consoleErrors}
+            />
 
             {/* ── Recommendations (Enhancement 9) ──────────────────────────── */}
             <Card>
