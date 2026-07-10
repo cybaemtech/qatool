@@ -1,0 +1,241 @@
+Before making any changes, analyze the complete existing QA Automation Portal.
+
+IMPORTANT:
+- Do NOT modify or remove any existing functionality.
+- Do NOT break routing.
+- Do NOT modify existing mock/demo data.
+- Do NOT change AI Copilot, Executive Dashboard, Notifications, Reports, Audits, Bugs, Projects, Users or Schedules.
+- Reuse existing components, cards, badges, tables and design tokens wherever possible.
+- Follow the existing UI/UX style exactly.
+
+Your task is to build a new Enterprise Integrations Hub.
+
+=========================================================
+CREATE NEW PAGE
+=========================================================
+
+Create a new page called:
+
+Integrations
+
+Add it to the sidebar navigation.
+
+=========================================================
+OVERVIEW SECTION
+=========================================================
+
+At the top create summary cards:
+
+• Connected Integrations
+• Available Integrations
+• Last Successful Sync
+• Failed Connections
+• Sync Health %
+
+=========================================================
+INTEGRATIONS GRID
+=========================================================
+
+Create modern enterprise cards for:
+
+• GitHub
+• GitLab
+• Jira
+• Azure DevOps
+• Bitbucket
+• Slack
+• Microsoft Teams
+• Trello
+• ClickUp
+• Asana
+• Linear
+• Sentry
+
+Each card should contain:
+
+- Official logo/icon
+- Integration name
+- Short description
+- Connected / Disconnected badge
+- Version
+- Last Sync Time
+- Health Status
+- Sync Frequency
+- Owner
+- Connect button
+- Disconnect button
+- Configure button
+- Sync Now button
+
+=========================================================
+DETAIL DRAWER
+=========================================================
+
+Clicking Configure opens a side drawer containing:
+
+Connection Details
+
+API Endpoint (mock)
+
+Workspace Name
+
+Project Mapping
+
+Webhook Status
+
+Auto Sync Toggle
+
+Notifications Toggle
+
+Environment
+
+Last Sync History
+
+Recent Activity Timeline
+
+Save Configuration button
+
+=========================================================
+SYNC HISTORY
+=========================================================
+
+Create a Sync History table with:
+
+Integration
+
+Action
+
+Started Time
+
+Completed Time
+
+Duration
+
+Status
+
+Triggered By
+
+Rows should include:
+
+Successful Sync
+
+Manual Sync
+
+Auto Sync
+
+Configuration Updated
+
+Authentication Refreshed
+
+=========================================================
+HEALTH DASHBOARD
+=========================================================
+
+Create a dashboard showing:
+
+Healthy Integrations
+
+Warning
+
+Disconnected
+
+Failed Syncs
+
+Average Response Time
+
+Weekly Sync Count
+
+=========================================================
+RECENT ACTIVITY
+=========================================================
+
+Timeline examples:
+
+GitHub synced repository
+
+Jira issue imported
+
+Slack notification sent
+
+Azure DevOps pipeline connected
+
+Bitbucket webhook updated
+
+Teams message delivered
+
+=========================================================
+FILTERS
+=========================================================
+
+Add filters:
+
+All
+
+Connected
+
+Disconnected
+
+Healthy
+
+Needs Attention
+
+Search by Integration
+
+=========================================================
+MICRO INTERACTIONS
+=========================================================
+
+Use Framer Motion for:
+
+Card hover
+
+Drawer open
+
+Button hover
+
+Status badge animation
+
+Counter animation
+
+=========================================================
+RESPONSIVE
+=========================================================
+
+Desktop
+
+Tablet
+
+Mobile
+
+=========================================================
+IMPORTANT
+=========================================================
+
+Everything should use realistic mock/demo data only.
+
+No backend implementation.
+
+No OAuth implementation.
+
+No real API calls.
+
+No authentication.
+
+No environment variables.
+
+No database changes.
+
+No existing data should be deleted or replaced.
+
+The page should look like a premium enterprise SaaS product similar to Azure DevOps, GitHub Enterprise, Atlassian or Datadog.
+
+=========================================================
+WHEN COMPLETE
+=========================================================
+
+Provide:
+
+• Files Created
+• Files Modified
+• Components Added
+• Confirmation that no existing functionality or mock/demo data was changed.

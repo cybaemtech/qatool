@@ -19,6 +19,7 @@ import Reports from "@/pages/reports";
 import Users from "@/pages/users";
 import Settings from "@/pages/settings";
 import Schedules from "@/pages/schedules";
+import Integrations from "@/pages/integrations";
 import Notifications from "@/pages/notifications";
 
 const queryClient = new QueryClient({
@@ -96,6 +97,12 @@ function AppRouter() {
       <Route path="/schedules">
         <ProtectedRoute>
           <Layout><Schedules /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/integrations">
+        <ProtectedRoute>
+          <Layout><Integrations /></Layout>
         </ProtectedRoute>
       </Route>
 
