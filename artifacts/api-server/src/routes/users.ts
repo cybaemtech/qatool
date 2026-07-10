@@ -43,6 +43,11 @@ router.get("/users/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
+  // Only admins or the user themselves may fetch a profile
+  if (req.user!.role !== "admin" && req.user!.userId !== params.data.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, params.data.id)).limit(1);
   if (!user) {
     res.status(404).json({ error: "User not found" });
@@ -58,7 +63,17 @@ router.patch("/users/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
+  // Only admins or the user themselves may update a profile
+  if (req.user!.role !== "admin" && req.user!.userId !== params.data.id) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
   const { name, role, password } = body.data;
+  // Only admins may change roles
+  if (role && req.user!.role !== "admin") {
+    res.status(403).json({ error: "Forbidden: only admins can change roles" });
+    return;
+  }
   const updates: Record<string, unknown> = {};
   if (name) updates.name = name;
   if (role) updates.role = role;
