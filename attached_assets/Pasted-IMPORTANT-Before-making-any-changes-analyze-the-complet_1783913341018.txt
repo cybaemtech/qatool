@@ -1,0 +1,305 @@
+IMPORTANT
+
+Before making any changes, analyze the complete QA Automation Portal.
+
+The project already contains:
+
+- Dashboard
+- Executive Dashboard
+- Projects
+- Audits
+- Audit Details
+- Live Audit Scanner
+- AI Copilot
+- Reports
+- Executive Report Center
+- Notifications
+- Integrations Hub
+- Users
+- Schedules
+
+DO NOT redesign any existing page.
+
+DO NOT duplicate AI Copilot.
+
+DO NOT create another AI dashboard.
+
+DO NOT change routing.
+
+DO NOT modify authentication.
+
+DO NOT modify the database.
+
+DO NOT remove or replace existing components.
+
+Your task is to ENHANCE the current AI experience.
+
+====================================================
+
+FEATURE
+
+Enterprise AI Bug Resolution Assistant
+
+====================================================
+
+Whenever a user opens a Bug or clicks a bug inside an Audit Report, enhance the current Bug Details experience.
+
+====================================================
+
+SECTION 1
+
+AI Resolution Summary
+
+Display:
+
+Overall Root Cause
+
+Business Impact
+
+Technical Impact
+
+Confidence %
+
+Regression Risk
+
+Estimated Fix Time
+
+Estimated QA Time
+
+Priority
+
+Affected Components
+
+Affected Files (mock)
+
+====================================================
+
+SECTION 2
+
+AI Fix Strategy
+
+Generate structured recommendations.
+
+Display:
+
+Immediate Fix
+
+Long-term Improvement
+
+Performance Impact
+
+Accessibility Impact
+
+SEO Impact
+
+Security Impact
+
+Difficulty
+
+====================================================
+
+SECTION 3
+
+Code Suggestions
+
+Display beautiful syntax-highlighted examples.
+
+Examples:
+
+Missing ALT
+
+Duplicate H1
+
+Missing Meta
+
+Unused CSS
+
+Large Images
+
+JavaScript Error
+
+Accessibility Label
+
+Broken Link
+
+Show
+
+Current Code
+
+↓
+
+Suggested Code
+
+↓
+
+Why this works
+
+↓
+
+Expected improvement
+
+====================================================
+
+SECTION 4
+
+Impact Simulator
+
+Interactive cards.
+
+Example:
+
+Current
+
+Performance 82
+
+↓
+
+After Fix
+
+Performance 91
+
+Accessibility 84 → 96
+
+SEO 79 → 90
+
+Health Score 87 → 95
+
+Animate score changes.
+
+====================================================
+
+SECTION 5
+
+Developer Checklist
+
+Generate checklist.
+
+Example
+
+☐ Compress Images
+
+☐ Remove Duplicate H1
+
+☐ Add Missing ALT
+
+☐ Fix CLS
+
+☐ Resolve Console Errors
+
+Allow checking items.
+
+====================================================
+
+SECTION 6
+
+Quick Actions
+
+Buttons
+
+Copy Suggested Fix
+
+Copy Code
+
+Generate Jira Issue (UI only)
+
+Assign Developer
+
+Mark Ready for QA
+
+Mark Fixed
+
+Use existing toast notifications.
+
+====================================================
+
+SECTION 7
+
+Learning Mode
+
+Collapsible card.
+
+Explain Like I'm a Junior Developer
+
+Explain
+
+Why issue occurred
+
+Why it matters
+
+How browsers behave
+
+How users are affected
+
+Best practices
+
+References
+
+====================================================
+
+SECTION 8
+
+Related Issues
+
+Show
+
+Similar Bugs
+
+Same Component
+
+Previous Audit
+
+Historical Trend
+
+====================================================
+
+SECTION 9
+
+AI Confidence
+
+Visual meter.
+
+High
+
+Medium
+
+Low
+
+Include reasoning.
+
+====================================================
+
+DESIGN
+
+Use the existing enterprise design system.
+
+Reuse current cards.
+
+Reuse AI Copilot styling.
+
+Reuse colors.
+
+Reuse spacing.
+
+Reuse typography.
+
+Use Framer Motion animations.
+
+Maintain responsiveness.
+
+====================================================
+
+IMPORTANT
+
+Do NOT create a new page.
+
+Do NOT duplicate AI Copilot.
+
+Enhance existing Bug Details and Audit workflows only.
+
+Everything should feel like GitHub Copilot Enterprise, Snyk and SonarQube combined.
+
+Provide:
+
+• Files Modified
+• Components Added
+• Confirmation that existing functionality remains unchanged.

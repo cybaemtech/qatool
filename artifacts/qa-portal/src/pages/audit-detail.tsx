@@ -42,6 +42,8 @@ import { Link } from "wouter";
 import { format, addSeconds } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { AiCopilotPanel } from "@/components/ai-copilot-panel";
+import { AiBugResolutionPanel } from "@/components/ai-bug-resolution-panel";
+import type { Bug as BugRecord } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -336,6 +338,7 @@ export default function AuditDetail() {
   const [isSharing, setIsSharing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [selectedAuditBug, setSelectedAuditBug] = useState<BugRecord | null>(null);
 
   const { data: audit, isLoading, refetch } = useGetAudit(auditId);
 
@@ -980,7 +983,11 @@ export default function AuditDetail() {
                     </TableHeader>
                     <TableBody>
                       {filteredBugs.map(bug => (
-                        <TableRow key={bug.id} className="hover:bg-muted/40 transition-colors">
+                        <TableRow
+                          key={bug.id}
+                          className="hover:bg-muted/40 transition-colors cursor-pointer"
+                          onClick={() => setSelectedAuditBug(bug as unknown as BugRecord)}
+                        >
                           <TableCell><SeverityBadge severity={bug.severity} /></TableCell>
                           <TableCell>
                             <Badge variant="outline" className={cn("text-xs", PRIORITY_PILL[bug.priority ?? "Medium"])}>
@@ -995,7 +1002,7 @@ export default function AuditDetail() {
                           </TableCell>
                           <TableCell><StatusBadge status={bug.status} /></TableCell>
                           <TableCell className="text-xs text-muted-foreground">{((bug as unknown) as Record<string, unknown>).assignedToName as string ?? "Unassigned"}</TableCell>
-                          <TableCell>
+                          <TableCell onClick={e => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
                               <Link href={`/bugs?auditRunId=${auditId}`}>
                                 <ExternalLink className="h-3.5 w-3.5" />
@@ -1907,6 +1914,36 @@ export default function AuditDetail() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* ── AI Bug Resolution Panel Dialog ─────────────────────────────── */}
+        <Dialog open={selectedAuditBug != null} onOpenChange={open => { if (!open) setSelectedAuditBug(null); }}>
+          <DialogContent className="max-w-4xl w-full max-h-[92vh] p-0 overflow-hidden flex flex-col">
+            <DialogHeader className="px-6 pt-5 pb-3 border-b border-border flex-shrink-0">
+              <DialogTitle className="flex items-start gap-2 text-base font-semibold leading-snug">
+                {selectedAuditBug?.title}
+              </DialogTitle>
+              {selectedAuditBug && (
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <SeverityBadge severity={selectedAuditBug.severity} />
+                  <StatusBadge status={selectedAuditBug.status} />
+                  {selectedAuditBug.description && (
+                    <span className="text-xs text-muted-foreground line-clamp-1">{selectedAuditBug.description}</span>
+                  )}
+                </div>
+              )}
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto p-6">
+              {selectedAuditBug && (
+                <AiBugResolutionPanel
+                  bug={selectedAuditBug}
+                  onMarkFixed={() => { setSelectedAuditBug(null); toast({ title: "Bug marked as fixed" }); }}
+                  onMarkReadyForQA={() => { toast({ title: "Marked ready for QA", description: "Status set to In Progress." }); }}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </TooltipProvider>
   );
