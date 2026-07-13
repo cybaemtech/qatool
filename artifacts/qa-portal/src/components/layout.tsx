@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useListNotifications, getListNotificationsQueryKey } from "@workspace/api-client-react";
-import { Loader2, Activity, LayoutDashboard, Folder, Bug, FileText, Users, Settings, LogOut, CalendarClock, Bell, Briefcase, Plug, FileBarChart2, Rocket } from "lucide-react";
+import { Loader2, Activity, LayoutDashboard, Folder, Bug, FileText, Users, Settings, LogOut, CalendarClock, Bell, Briefcase, Plug, FileBarChart2, Rocket, Zap } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -57,6 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Reports', href: '/reports', icon: FileText },
     { name: 'Report Center', href: '/reports/executive', icon: FileBarChart2 },
     { name: 'Release Readiness', href: '/release-readiness', icon: Rocket },
+    { name: 'CI/CD Pipeline', href: '/cicd-pipeline', icon: Zap },
     { name: 'Schedules', href: '/schedules', icon: CalendarClock },
     { name: 'Integrations', href: '/integrations', icon: Plug },
   ];

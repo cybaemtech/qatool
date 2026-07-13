@@ -1,0 +1,241 @@
+IMPORTANT
+
+Analyze the entire QA Automation Portal before making changes.
+
+Existing modules include:
+
+Dashboard
+Executive Dashboard
+Projects
+Audits
+Live Audit
+Bug Tracker
+AI Bug Resolution Assistant
+Reports
+Executive Report Center
+Schedules
+Integrations
+Release Readiness
+Users
+
+DO NOT redesign existing pages.
+
+DO NOT modify routing outside adding one new module.
+
+DO NOT alter authentication.
+
+DO NOT change existing database models.
+
+Reuse existing design system, components, cards, tables, charts and animations.
+
+==================================================
+
+Create a NEW sidebar module:
+
+🚀 CI/CD Pipeline
+
+Place it directly below Release Readiness.
+
+==================================================
+
+Purpose
+
+Provide enterprise visibility into build pipelines and deployment health.
+
+==================================================
+
+Top KPI Cards
+
+Active Pipelines
+
+Successful Builds
+
+Failed Builds
+
+Average Build Time
+
+Deployment Frequency
+
+Success Rate
+
+Pending Deployments
+
+Current Environment
+
+==================================================
+
+Pipeline Overview
+
+Display pipeline cards for:
+
+GitHub Actions
+
+GitLab CI
+
+Azure DevOps
+
+Jenkins
+
+Bitbucket Pipelines
+
+CircleCI
+
+Each card should show:
+
+Current Status
+
+Branch
+
+Latest Commit
+
+Triggered By
+
+Duration
+
+Success Rate
+
+Last Deployment
+
+==================================================
+
+Build History
+
+Interactive table containing:
+
+Build Number
+
+Pipeline
+
+Branch
+
+Commit
+
+Author
+
+Duration
+
+Environment
+
+Result
+
+Triggered Time
+
+==================================================
+
+Deployment Timeline
+
+Visual timeline
+
+Build Started
+
+Unit Tests
+
+Integration Tests
+
+QA Approval
+
+Release Ready
+
+Deployment
+
+Smoke Tests
+
+Completed
+
+==================================================
+
+Environment Health
+
+Cards for:
+
+Development
+
+Testing
+
+Staging
+
+Production
+
+Each should display:
+
+Status
+
+Version
+
+Last Deployment
+
+Health Score
+
+==================================================
+
+Pipeline Analytics
+
+Charts:
+
+Build Success Trend
+
+Deployment Frequency
+
+Average Build Duration
+
+Failure Distribution
+
+==================================================
+
+Failed Builds Panel
+
+Show:
+
+Pipeline
+
+Failure Reason
+
+Owner
+
+Time
+
+Retry Button
+
+==================================================
+
+Quick Actions
+
+Trigger Build
+
+Deploy to Staging
+
+Deploy to Production
+
+Rollback
+
+Retry Failed Build
+
+Download Logs
+
+==================================================
+
+Recent Activity Feed
+
+Show latest CI/CD events with timestamps.
+
+==================================================
+
+Design
+
+Reuse existing enterprise UI.
+
+Maintain responsive layout.
+
+Use Framer Motion animations.
+
+Use consistent spacing, typography and cards.
+
+Do not modify any existing modules.
+
+Return:
+
+Files Created
+
+Files Modified
+
+Confirmation that all existing modules remain untouched.
