@@ -25,6 +25,7 @@ import LiveAuditScanner from "@/pages/live-audit-scanner";
 import ExecutiveReportCenter from "@/pages/executive-report-center";
 import ReleaseReadiness from "@/pages/release-readiness";
 import CicdPipeline from "@/pages/cicd-pipeline";
+import SecurityCompliance from "@/pages/security-compliance";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -113,6 +114,12 @@ function AppRouter() {
       <Route path="/cicd-pipeline">
         <ProtectedRoute>
           <Layout><CicdPipeline /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/security-compliance">
+        <ProtectedRoute>
+          <Layout><SecurityCompliance /></Layout>
         </ProtectedRoute>
       </Route>
 

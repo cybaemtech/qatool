@@ -1,0 +1,261 @@
+Create a new enterprise page called "Security & Compliance Center" in the existing QA Automation Portal.
+
+IMPORTANT:
+- Do NOT modify or redesign any existing pages.
+- Do NOT change routing, layouts, navigation style, authentication, theme, or existing functionality.
+- Follow the exact UI/UX, spacing, typography, cards, colors and component styling already used throughout the application.
+- Add this as a brand-new module in the left sidebar below "CI/CD Pipeline".
+
+The page should simulate enterprise security and compliance monitoring using realistic mock data only (no external APIs).
+
+==========================
+HEADER
+==========================
+
+Title:
+Security & Compliance Center
+
+Subtitle:
+Enterprise security posture, vulnerability management and compliance monitoring.
+
+Top-right actions:
+- Run Security Scan
+- Export Security Report
+- Download SBOM
+- Share
+
+==========================
+SUMMARY CARDS
+==========================
+
+Display cards for:
+
+- Security Score
+- Critical Vulnerabilities
+- High Vulnerabilities
+- Medium Vulnerabilities
+- Low Vulnerabilities
+- Compliance Score
+- Last Scan
+- AI Confidence
+
+Use appropriate colors:
+Green
+Amber
+Orange
+Red
+Purple
+
+==========================
+SECURITY OVERVIEW
+==========================
+
+Show cards for:
+
+• Dependency Scan
+Status
+Packages scanned
+Issues found
+
+• Secret Detection
+Secrets exposed
+Status
+
+• Container Security
+Images scanned
+Critical findings
+
+• SSL / TLS
+Certificate validity
+Expiry
+Protocol version
+
+• Authentication
+MFA enabled
+Password policy
+Session security
+
+• Code Security
+Static Analysis
+Dynamic Analysis
+Coverage
+
+==========================
+OWASP TOP 10
+==========================
+
+Interactive table containing:
+
+Risk
+Severity
+Affected Projects
+Status
+Recommended Action
+
+Include realistic examples such as:
+
+Broken Access Control
+
+Injection
+
+Cryptographic Failures
+
+Security Misconfiguration
+
+Vulnerable Components
+
+Identification Failures
+
+Software Integrity Failures
+
+Logging & Monitoring
+
+SSRF
+
+Use severity badges.
+
+==========================
+VULNERABILITY TABLE
+==========================
+
+Enterprise table with:
+
+CVE ID
+
+Title
+
+Severity
+
+CVSS Score
+
+Affected Project
+
+Detected Date
+
+Owner
+
+ETA
+
+Status
+
+Include realistic mock vulnerabilities.
+
+==========================
+COMPLIANCE DASHBOARD
+==========================
+
+Cards for:
+
+ISO 27001
+
+SOC2
+
+GDPR
+
+PCI-DSS
+
+OWASP ASVS
+
+Each card should show:
+
+Compliance %
+
+Status badge
+
+Last Audit
+
+Next Review
+
+==========================
+AI SECURITY RECOMMENDATIONS
+==========================
+
+Large enterprise AI recommendation panel.
+
+Include:
+
+Top Risks
+
+Root Cause Summary
+
+Business Impact
+
+Security Impact
+
+Recommended Actions
+
+Estimated Fix Time
+
+Priority
+
+Confidence %
+
+Expected Risk Reduction
+
+==========================
+SECURITY ANALYTICS
+==========================
+
+Charts for:
+
+Vulnerabilities by Severity
+
+Monthly Security Trend
+
+Compliance Trend
+
+Risk Distribution
+
+Open vs Closed Vulnerabilities
+
+Use the same chart library already used in the application.
+
+==========================
+SECURITY TIMELINE
+==========================
+
+Activity feed showing events like:
+
+Security scan started
+
+Dependency scan completed
+
+Critical CVE detected
+
+Secret removed
+
+Compliance audit completed
+
+Patch deployed
+
+Re-scan successful
+
+==========================
+QUICK ACTIONS
+==========================
+
+Buttons:
+
+Run Full Scan
+
+View Vulnerabilities
+
+Patch Recommendations
+
+Generate Compliance Report
+
+Assign Security Review
+
+Export Findings
+
+==========================
+REQUIREMENTS
+==========================
+
+- Use only existing project design system.
+- Reuse existing components wherever possible.
+- Mobile responsive.
+- Professional enterprise appearance.
+- Populate everything with believable mock data.
+- Do not remove or change any existing feature.
+- Keep implementation modular and production-ready.
