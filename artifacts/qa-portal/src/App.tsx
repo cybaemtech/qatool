@@ -23,6 +23,7 @@ import Integrations from "@/pages/integrations";
 import Notifications from "@/pages/notifications";
 import LiveAuditScanner from "@/pages/live-audit-scanner";
 import ExecutiveReportCenter from "@/pages/executive-report-center";
+import ReleaseReadiness from "@/pages/release-readiness";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,12 @@ function AppRouter() {
       <Route path="/reports/executive">
         <ProtectedRoute>
           <Layout><ExecutiveReportCenter /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/release-readiness">
+        <ProtectedRoute>
+          <Layout><ReleaseReadiness /></Layout>
         </ProtectedRoute>
       </Route>
 

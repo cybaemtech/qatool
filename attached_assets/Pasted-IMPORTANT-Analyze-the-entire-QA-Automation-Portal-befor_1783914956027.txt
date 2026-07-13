@@ -1,0 +1,230 @@
+IMPORTANT
+
+Analyze the entire QA Automation Portal before making any changes.
+
+Existing modules include:
+
+Dashboard
+Executive Dashboard
+Projects
+Audits
+Audit Details
+Live Audit
+Bug Tracker
+AI Bug Resolution Assistant
+Reports
+Executive Report Center
+Schedules
+Integrations
+Users
+
+DO NOT redesign existing pages.
+
+DO NOT modify routing.
+
+DO NOT change authentication.
+
+DO NOT change database schema.
+
+DO NOT replace existing components.
+
+==================================================
+
+Create a NEW module:
+
+Release Readiness Center
+
+==================================================
+
+Add a new sidebar item:
+
+🚀 Release Readiness
+
+Place it below Report Center.
+
+==================================================
+
+Purpose
+
+Provide a centralized release approval dashboard that determines whether an application is ready for deployment based on audits, bugs, performance, accessibility, SEO, security, and AI recommendations.
+
+==================================================
+
+Dashboard Summary
+
+Display KPI cards:
+
+Release Score
+
+Deployment Status
+(Ready / Ready with Warnings / Blocked)
+
+Critical Bugs
+
+Open Bugs
+
+Passed Checks
+
+Failed Checks
+
+Regression Risk
+
+AI Confidence
+
+==================================================
+
+Release Decision
+
+Large hero card.
+
+Show one of:
+
+✅ Ready for Production
+
+⚠ Ready with Warnings
+
+❌ Release Blocked
+
+Include explanation.
+
+==================================================
+
+Release Gates
+
+Checklist with pass/fail indicators.
+
+Performance
+
+Accessibility
+
+SEO
+
+Security
+
+Critical Bugs
+
+Regression Tests
+
+Smoke Tests
+
+Lighthouse
+
+Console Errors
+
+Broken Links
+
+Each gate should show:
+
+Pass
+
+Warning
+
+Fail
+
+==================================================
+
+Deployment Timeline
+
+Vertical timeline.
+
+Audit Finished
+
+QA Approved
+
+Regression Complete
+
+Manager Review
+
+Release Approved
+
+Deployment
+
+Post Release Validation
+
+==================================================
+
+AI Release Recommendation
+
+Enterprise AI summary.
+
+Explain:
+
+Major Risks
+
+Business Impact
+
+Recommended Actions
+
+Confidence %
+
+Expected Stability
+
+==================================================
+
+Blocking Issues
+
+Table.
+
+Issue
+
+Severity
+
+Owner
+
+ETA
+
+Status
+
+==================================================
+
+Readiness Trends
+
+Charts.
+
+Release score over time
+
+Critical bug trend
+
+Open bug trend
+
+==================================================
+
+Quick Actions
+
+Approve Release
+
+Reject Release
+
+Request Re-Audit
+
+Generate Release Notes
+
+Share Summary
+
+Export PDF
+
+==================================================
+
+Design
+
+Reuse existing enterprise design system.
+
+Reuse Report Center styling.
+
+Reuse Dashboard cards.
+
+Reuse charts.
+
+Use Framer Motion animations.
+
+Maintain responsiveness.
+
+==================================================
+
+Return:
+
+Files Created
+
+Files Modified
+
+Confirmation that existing modules remain unchanged.
