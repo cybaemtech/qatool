@@ -22,7 +22,7 @@ import {
   CheckCircle2, Clock, AlertTriangle, Zap, Bot, Sparkles,
   ChevronRight, Search, FileText, Send, Paperclip,
   Calendar, Filter, Phone, Mail, MapPin, Star,
-  TrendingUp, Activity, Layers, RefreshCw,
+  TrendingUp, Activity, Layers, RefreshCw, BarChart2,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
