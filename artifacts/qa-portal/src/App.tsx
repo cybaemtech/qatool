@@ -28,6 +28,7 @@ import CicdPipeline from "@/pages/cicd-pipeline";
 import SecurityCompliance from "@/pages/security-compliance";
 import ApiMonitoring from "@/pages/api-monitoring";
 import TestManagement from "@/pages/test-management";
+import TeamCollaboration from "@/pages/team-collaboration";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -134,6 +135,12 @@ function AppRouter() {
       <Route path="/test-management">
         <ProtectedRoute>
           <Layout><TestManagement /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/team-collaboration">
+        <ProtectedRoute>
+          <Layout><TeamCollaboration /></Layout>
         </ProtectedRoute>
       </Route>
 

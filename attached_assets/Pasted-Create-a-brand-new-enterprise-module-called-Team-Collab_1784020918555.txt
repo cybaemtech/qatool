@@ -1,0 +1,528 @@
+Create a brand-new enterprise module called **Team Collaboration Center** for the QA Automation Portal.
+
+IMPORTANT:
+• DO NOT modify any existing page.
+• Follow the exact same UI design, spacing, colors, cards, typography, charts, tables and component styling used throughout the application.
+• Use the same layout, sidebar, top header, animations, responsiveness, hover effects and theme.
+• All data should be realistic demo enterprise data.
+• The page must be fully responsive and look production-ready.
+
+==================================================
+PAGE TITLE
+==================================================
+
+Team Collaboration Center
+
+Subtitle:
+Enterprise collaboration, sprint coordination, communication and workload management for QA teams.
+
+Top Action Buttons
+
+• Start Meeting
+• Create Discussion
+• Create Task
+• Assign Tester
+• Share Files
+• Export Team Report
+
+==================================================
+TOP KPI CARDS
+==================================================
+
+Display attractive KPI cards.
+
+Total Team Members
+48
+
+Online Now
+31
+
+Active Sprint
+Sprint 43
+
+Open Discussions
+24
+
+Pending Approvals
+9
+
+Tasks Due Today
+18
+
+Avg Team Utilization
+87%
+
+AI Collaboration Score
+95%
+
+==================================================
+TEAM OVERVIEW
+==================================================
+
+Beautiful team member cards.
+
+Display around 12 members.
+
+Each card contains
+
+Avatar
+Name
+Role
+Department
+Current Sprint
+Current Task
+Status
+
+Statuses
+
+Online
+Away
+Busy
+Offline
+In Meeting
+
+Workload Progress Bar
+
+Availability %
+
+Current Bug Count
+
+Current Test Cases
+
+Completed Today
+
+Average Response Time
+
+Quick Actions
+
+Message
+Assign Task
+View Profile
+
+==================================================
+LIVE TEAM ACTIVITY
+==================================================
+
+Timeline similar to GitHub Activity.
+
+Examples
+
+Alice assigned BUG-302
+
+Regression Suite Completed
+
+Sprint Planning Started
+
+Bob approved Release 4.3
+
+Security Review Completed
+
+API Tests Triggered
+
+Deployment Approved
+
+Smoke Tests Passed
+
+Requirement Updated
+
+New Test Case Imported
+
+Every activity should show
+
+Avatar
+
+Time
+
+Priority Color
+
+Module
+
+==================================================
+TEAM CHAT PREVIEW
+==================================================
+
+Modern Slack / Microsoft Teams style.
+
+General
+
+Regression Testing
+
+API Team
+
+Security
+
+Release Planning
+
+Messages
+
+Typing indicator
+
+Unread badges
+
+Online indicators
+
+Pinned messages
+
+Recent shared files
+
+==================================================
+KANBAN TASK BOARD
+==================================================
+
+Four columns.
+
+Backlog
+
+In Progress
+
+QA Review
+
+Completed
+
+Each task card should contain
+
+Task ID
+
+Priority
+
+Owner
+
+Sprint
+
+Due Date
+
+Labels
+
+Progress
+
+Estimated Hours
+
+==================================================
+SPRINT BOARD
+==================================================
+
+Display
+
+Sprint Progress
+
+Burndown
+
+Velocity
+
+Story Points
+
+Completed Tasks
+
+Remaining Tasks
+
+Sprint Goal
+
+Current Milestone
+
+==================================================
+TEAM WORKLOAD
+==================================================
+
+Horizontal workload cards.
+
+Each tester
+
+Assigned Tasks
+
+Completed
+
+Remaining
+
+Utilization %
+
+Capacity %
+
+Color-coded workload
+
+Highlight overloaded members.
+
+==================================================
+QA APPROVALS
+==================================================
+
+Approval queue.
+
+Release Approval
+
+Regression Approval
+
+Security Approval
+
+Performance Approval
+
+API Approval
+
+Each row
+
+Approver
+
+Status
+
+ETA
+
+Priority
+
+Approve Button
+
+Reject Button
+
+==================================================
+CALENDAR
+==================================================
+
+Upcoming events.
+
+Daily Standup
+
+Sprint Planning
+
+Regression Run
+
+Client Demo
+
+Release Window
+
+Security Review
+
+Retrospective
+
+==================================================
+SHARED FILES
+==================================================
+
+Recent documents.
+
+Regression_Report.pdf
+
+Sprint42.xlsx
+
+API_TestCollection.json
+
+Security_Audit.pdf
+
+Release_Checklist.docx
+
+Display
+
+Uploader
+
+Date
+
+Size
+
+Version
+
+Download Button
+
+==================================================
+DISCUSSIONS
+==================================================
+
+Discussion cards.
+
+Topic
+
+Owner
+
+Replies
+
+Views
+
+Priority
+
+Last Updated
+
+Examples
+
+Regression Failure Investigation
+
+API Timeout Issue
+
+Release Go/No-Go
+
+Test Automation Improvements
+
+Performance Bottleneck
+
+Security Review Notes
+
+==================================================
+AI TEAM INSIGHTS
+==================================================
+
+Large AI Recommendation card.
+
+Include
+
+Top Risks
+
+Most Overloaded Engineer
+
+Collaboration Score
+
+Communication Health
+
+Knowledge Sharing Index
+
+AI Suggestions
+
+Examples
+
+Reassign 4 API tests from Alice to Bob.
+
+Schedule regression after deployment.
+
+Increase Security team capacity.
+
+QA Review bottleneck detected.
+
+Potential sprint delay due to pending approvals.
+
+Expected productivity gain
+
+Estimated completion improvement
+
+Confidence %
+
+==================================================
+COLLABORATION ANALYTICS
+==================================================
+
+Professional charts.
+
+Messages per Day
+
+Tasks Completed
+
+Sprint Velocity
+
+Collaboration Trend
+
+Meeting Time
+
+Approval Trend
+
+Workload Distribution
+
+Team Productivity
+
+==================================================
+MEMBER DIRECTORY
+==================================================
+
+Professional searchable table.
+
+Columns
+
+Avatar
+
+Employee ID
+
+Name
+
+Role
+
+Department
+
+Email
+
+Phone
+
+Manager
+
+Location
+
+Timezone
+
+Experience
+
+Skills
+
+Current Sprint
+
+Current Project
+
+Availability
+
+Status
+
+Actions
+
+==================================================
+QUICK ACTIONS
+==================================================
+
+Sticky action section.
+
+Create Discussion
+
+Assign Task
+
+Start Meeting
+
+Generate AI Summary
+
+View Sprint
+
+Invite Member
+
+Export Report
+
+Share Dashboard
+
+==================================================
+SMART FEATURES
+==================================================
+
+Animated progress bars
+
+Hover cards
+
+Micro animations
+
+Status badges
+
+Role badges
+
+Priority colors
+
+Search
+
+Filters
+
+Sorting
+
+Pagination
+
+Expandable cards
+
+Skeleton loading
+
+Empty states
+
+Responsive design
+
+Dark mode compatibility
+
+Glassmorphism effects matching the application
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT remove or change any existing module.
+
+Only create this new Team Collaboration Center.
+
+Integrate it into the sidebar.
+
+Maintain identical design language with the rest of the portal.
+
+Everything must look like it belongs to the same enterprise application.
+
+This should be one of the most premium-looking pages in the entire QA Portal.
