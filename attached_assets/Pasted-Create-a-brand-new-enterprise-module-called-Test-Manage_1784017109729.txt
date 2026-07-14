@@ -1,0 +1,408 @@
+Create a brand-new enterprise module called "Test Management" for the existing QA Automation Portal.
+
+IMPORTANT
+
+- Do NOT modify any existing pages.
+- Do NOT change authentication, theme, routing, sidebar layout, or reusable UI components.
+- Add this as a NEW sidebar item directly below API Monitoring.
+- Reuse the existing design system.
+- Populate the module with realistic enterprise mock data only.
+- Everything must look production-ready.
+
+==================================================
+
+HEADER
+
+==================================================
+
+Title:
+Test Management
+
+Subtitle:
+Centralized management of manual, automated, regression, smoke and release test cases.
+
+Top-right buttons
+
+Create Test Case
+
+Import Test Cases
+
+Execute Test Suite
+
+Export Test Plan
+
+Share
+
+==================================================
+
+TOP KPI CARDS
+
+==================================================
+
+Display cards for
+
+Total Test Cases
+
+Passed
+
+Failed
+
+Blocked
+
+Not Executed
+
+Automation Coverage
+
+Active Test Suites
+
+AI Confidence
+
+==================================================
+
+TEST PLAN OVERVIEW
+
+==================================================
+
+Enterprise cards showing
+
+Sprint Test Plan
+
+Release Test Plan
+
+Regression Plan
+
+Smoke Suite
+
+Sanity Suite
+
+Performance Suite
+
+Security Suite
+
+Each card displays
+
+Owner
+
+Status
+
+Progress
+
+Total Cases
+
+Pass %
+
+ETA
+
+==================================================
+
+TEST CASE MANAGEMENT TABLE
+
+==================================================
+
+Columns
+
+Test ID
+
+Module
+
+Feature
+
+Priority
+
+Severity
+
+Automation
+
+Owner
+
+Last Updated
+
+Execution Status
+
+Include search, filters and sorting.
+
+==================================================
+
+TEST EXECUTION DASHBOARD
+
+==================================================
+
+Cards showing
+
+Passed
+
+Failed
+
+Blocked
+
+Skipped
+
+Not Run
+
+Average Execution Time
+
+Defect Leakage
+
+Execution Progress
+
+==================================================
+
+TEST SUITES
+
+==================================================
+
+Cards for
+
+Smoke
+
+Regression
+
+Sanity
+
+Functional
+
+Integration
+
+API
+
+Performance
+
+Security
+
+Each displays
+
+Pass %
+
+Execution Time
+
+Owner
+
+Schedule
+
+Status
+
+==================================================
+
+TEST CASE DETAILS
+
+==================================================
+
+Enterprise expandable section containing
+
+Description
+
+Preconditions
+
+Test Steps
+
+Expected Result
+
+Actual Result
+
+Attachments
+
+Linked Bugs
+
+Linked Requirements
+
+Environment
+
+Browser
+
+Device
+
+Automation Script
+
+==================================================
+
+AI TEST ANALYSIS
+
+==================================================
+
+Large AI insights panel.
+
+Include
+
+Root Cause Analysis
+
+Most Failed Modules
+
+Flaky Tests
+
+Regression Risks
+
+Duplicate Tests
+
+Missing Coverage
+
+Recommended Improvements
+
+Estimated Coverage Gain
+
+Estimated Execution Time Saved
+
+AI Confidence
+
+==================================================
+
+REQUIREMENT TRACEABILITY MATRIX
+
+==================================================
+
+Enterprise matrix mapping
+
+Requirement
+
+User Story
+
+Feature
+
+Test Cases
+
+Execution
+
+Coverage %
+
+Bug Count
+
+==================================================
+
+TEST COVERAGE ANALYTICS
+
+==================================================
+
+Charts
+
+Execution Trend
+
+Coverage Trend
+
+Pass vs Fail
+
+Module Coverage
+
+Automation Coverage
+
+Defect Leakage
+
+Requirement Coverage
+
+==================================================
+
+FAILED TESTS TABLE
+
+==================================================
+
+Columns
+
+Test Case
+
+Module
+
+Failure Reason
+
+Environment
+
+Assigned To
+
+Bug Linked
+
+Priority
+
+ETA
+
+Status
+
+==================================================
+
+TEST EXECUTION TIMELINE
+
+==================================================
+
+Timeline showing
+
+Suite Started
+
+Execution Completed
+
+Bug Created
+
+Retest
+
+Regression Executed
+
+Sprint Closed
+
+==================================================
+
+TEST ENVIRONMENTS
+
+==================================================
+
+Cards for
+
+Development
+
+QA
+
+UAT
+
+Staging
+
+Production
+
+Each displays
+
+Health
+
+Availability
+
+Version
+
+Execution Count
+
+Pass %
+
+==================================================
+
+QUICK ACTIONS
+
+==================================================
+
+Buttons
+
+Create Test Case
+
+Run Smoke Suite
+
+Run Regression
+
+Import Excel
+
+Generate Test Report
+
+View Failed Tests
+
+Assign Tester
+
+Export Results
+
+==================================================
+
+IMPLEMENTATION RULES
+
+==================================================
+
+Fully responsive.
+
+Enterprise-grade UI.
+
+Reuse existing cards, charts and tables.
+
+No placeholder text.
+
+No lorem ipsum.
+
+Everything must appear production-ready using realistic enterprise QA data.
+
+Do not modify any existing modules.

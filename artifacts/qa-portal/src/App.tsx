@@ -27,6 +27,7 @@ import ReleaseReadiness from "@/pages/release-readiness";
 import CicdPipeline from "@/pages/cicd-pipeline";
 import SecurityCompliance from "@/pages/security-compliance";
 import ApiMonitoring from "@/pages/api-monitoring";
+import TestManagement from "@/pages/test-management";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -127,6 +128,12 @@ function AppRouter() {
       <Route path="/api-monitoring">
         <ProtectedRoute>
           <Layout><ApiMonitoring /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/test-management">
+        <ProtectedRoute>
+          <Layout><TestManagement /></Layout>
         </ProtectedRoute>
       </Route>
 
