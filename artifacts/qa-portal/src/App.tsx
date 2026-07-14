@@ -26,6 +26,7 @@ import ExecutiveReportCenter from "@/pages/executive-report-center";
 import ReleaseReadiness from "@/pages/release-readiness";
 import CicdPipeline from "@/pages/cicd-pipeline";
 import SecurityCompliance from "@/pages/security-compliance";
+import ApiMonitoring from "@/pages/api-monitoring";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -120,6 +121,12 @@ function AppRouter() {
       <Route path="/security-compliance">
         <ProtectedRoute>
           <Layout><SecurityCompliance /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/api-monitoring">
+        <ProtectedRoute>
+          <Layout><ApiMonitoring /></Layout>
         </ProtectedRoute>
       </Route>
 

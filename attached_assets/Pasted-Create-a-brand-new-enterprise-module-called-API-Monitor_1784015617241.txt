@@ -1,0 +1,387 @@
+Create a brand-new enterprise module called "API Monitoring & Testing Center" for the existing QA Automation Portal.
+
+IMPORTANT:
+- DO NOT modify any existing pages.
+- DO NOT change layouts, routing, sidebar design, authentication, theme, colors or reusable components.
+- Add this as a NEW sidebar item immediately below "Security & Compliance".
+- Reuse the existing design system and UI components already present throughout the application.
+- Use realistic enterprise mock data only (NO external APIs).
+
+==================================================
+HEADER
+==================================================
+
+Title:
+API Monitoring & Testing Center
+
+Subtitle:
+Real-time API health monitoring, automated testing, endpoint analytics and performance insights.
+
+Top-right actions:
+
+- Run Health Check
+- Execute API Tests
+- Download OpenAPI Spec
+- Export Report
+- Share
+
+==================================================
+SUMMARY CARDS
+==================================================
+
+Create KPI cards for:
+
+- Total APIs
+- Healthy APIs
+- Degraded APIs
+- Failed APIs
+- Average Response Time
+- Requests Today
+- Error Rate
+- Uptime
+- SLA Compliance
+- AI Confidence
+
+Use green, blue, amber and red status colors matching the current design system.
+
+==================================================
+API HEALTH OVERVIEW
+==================================================
+
+Display responsive cards for major services:
+
+Authentication API
+
+User API
+
+Project API
+
+Audit API
+
+Bug API
+
+Report API
+
+Notification API
+
+Analytics API
+
+Payment API
+
+Each card should display:
+
+- Current Status
+- Response Time
+- Availability
+- Requests Today
+- Error Rate
+- Last Health Check
+- Environment
+- Version
+
+==================================================
+LIVE ENDPOINT STATUS TABLE
+==================================================
+
+Enterprise table containing:
+
+Method
+
+Endpoint
+
+Service
+
+Latency
+
+Status Code
+
+Availability
+
+Requests
+
+Errors
+
+Owner
+
+Environment
+
+Last Checked
+
+Status badge
+
+Include realistic GET, POST, PUT and DELETE endpoints.
+
+==================================================
+API TEST EXECUTION SUMMARY
+==================================================
+
+Show cards for:
+
+Collections Executed
+
+Total Tests
+
+Passed
+
+Failed
+
+Skipped
+
+Automation Coverage
+
+Average Execution Time
+
+Last Execution
+
+==================================================
+AUTOMATED TEST SUITES
+==================================================
+
+Display enterprise cards for:
+
+Smoke Tests
+
+Regression Tests
+
+Security Tests
+
+Performance Tests
+
+Contract Tests
+
+Integration Tests
+
+Each shows:
+
+Status
+
+Duration
+
+Pass %
+
+Executed By
+
+Last Run
+
+==================================================
+AI API ANALYSIS
+==================================================
+
+Large enterprise AI recommendation panel.
+
+Include:
+
+Root Cause Summary
+
+Slowest Endpoints
+
+Most Error-Prone APIs
+
+Performance Bottlenecks
+
+Caching Opportunities
+
+Database Query Analysis
+
+Business Impact
+
+Technical Impact
+
+Recommended Actions
+
+Estimated Performance Improvement
+
+Estimated Fix Time
+
+Priority
+
+Confidence %
+
+Expected Response Time Improvement
+
+==================================================
+API ANALYTICS
+==================================================
+
+Create charts using the existing chart library already used elsewhere.
+
+Include:
+
+Request Volume Trend
+
+Response Time Trend
+
+Success vs Failure Rate
+
+Status Code Distribution
+
+Endpoint Usage
+
+Latency Comparison
+
+Top Slow APIs
+
+Environment Performance Comparison
+
+==================================================
+FAILED REQUESTS
+==================================================
+
+Enterprise table containing:
+
+Timestamp
+
+Endpoint
+
+Method
+
+Status Code
+
+Error
+
+Retry Count
+
+Owner
+
+Environment
+
+Resolution Status
+
+ETA
+
+==================================================
+API LOGS
+==================================================
+
+Create a recent activity timeline showing:
+
+Health Check Completed
+
+Authentication Failure
+
+500 Error Detected
+
+API Recovery
+
+Performance Alert
+
+Rate Limit Warning
+
+Deployment Completed
+
+New Version Released
+
+==================================================
+ENVIRONMENT HEALTH
+==================================================
+
+Cards for:
+
+Development
+
+Testing
+
+Staging
+
+Production
+
+Each displays:
+
+Health Score
+
+Average Latency
+
+Availability
+
+Error %
+
+Current Version
+
+Deployment Time
+
+==================================================
+API DOCUMENTATION SUMMARY
+==================================================
+
+Show cards for:
+
+OpenAPI Version
+
+Endpoints Documented
+
+Collections
+
+Webhooks
+
+Authentication Type
+
+SDK Availability
+
+==================================================
+SERVICE DEPENDENCY MAP
+==================================================
+
+Create a visual service relationship section showing:
+
+Frontend
+
+↓
+
+API Gateway
+
+↓
+
+Authentication
+
+↓
+
+Business APIs
+
+↓
+
+Database
+
+↓
+
+Notifications
+
+↓
+
+Analytics
+
+Represent this as an enterprise dependency flow using cards and connectors (no external visualization libraries).
+
+==================================================
+QUICK ACTIONS
+==================================================
+
+Buttons:
+
+Run Full Health Check
+
+Execute Regression Suite
+
+View Failed Requests
+
+Generate Performance Report
+
+Download Postman Collection
+
+Download OpenAPI Specification
+
+Export Analytics
+
+View API Logs
+
+==================================================
+IMPLEMENTATION RULES
+==================================================
+
+- Fully responsive.
+- Professional enterprise appearance.
+- Reuse existing cards, badges, tables and charts.
+- Populate everything with believable mock data.
+- Keep the implementation modular.
+- Do not remove or modify existing functionality.
+- Do not create placeholder sections.
+- Every section should appear production-ready and consistent with the existing QA Automation Portal.
