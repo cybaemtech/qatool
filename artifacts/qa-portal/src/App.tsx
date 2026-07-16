@@ -29,6 +29,7 @@ import SecurityCompliance from "@/pages/security-compliance";
 import ApiMonitoring from "@/pages/api-monitoring";
 import TestManagement from "@/pages/test-management";
 import TeamCollaboration from "@/pages/team-collaboration";
+import AiCopilot from "@/pages/ai-copilot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -141,6 +142,12 @@ function AppRouter() {
       <Route path="/team-collaboration">
         <ProtectedRoute>
           <Layout><TeamCollaboration /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/ai-copilot">
+        <ProtectedRoute>
+          <Layout><AiCopilot /></Layout>
         </ProtectedRoute>
       </Route>
 
