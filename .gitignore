@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Generated runtime report files
+artifacts/api-server/reports/
