@@ -48,5 +48,8 @@ Thumbs.db
 .cache/
 .local/
 
+# Uploaded zip archives
+*.zip
+
 # Generated runtime report files
 artifacts/api-server/reports/
