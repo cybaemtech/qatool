@@ -1,24 +1,33 @@
+// ─── Audit Execution Engine ───────────────────────────────────────────────────
+// Modular, layered audit engine. Each scanner is independent and replaceable.
+// Swap mock scanners for real integrations (Playwright, Lighthouse, axe-core,
+// OWASP ZAP, etc.) by injecting a real adapter — zero architecture changes needed.
+
 import { db } from "@workspace/db";
 import { auditRunsTable, bugsTable, screenshotsTable, notificationsTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
+import type { AuditContext, AuditResult, AuditFinding, ScannerName } from "./audit-types";
+import {
+  performanceScanner,
+  accessibilityScanner,
+  seoScanner,
+  securityScanner,
+  brokenLinkScanner,
+  consoleErrorCollector,
+  networkAnalyzer,
+  screenshotCapture,
+  technologyDetector,
+  aiSummaryGenerator,
+} from "./scanners/index";
 
-interface AuditFindings {
-  homepageLoaded: boolean;
-  consoleErrors: string[];
-  failedRequests: string[];
-  brokenLinks: string[];
-  formIssues: string[];
-  networkErrors: string[];
-  navigationChecked: boolean;
-  responsiveness: { desktop: boolean; tablet: boolean; mobile: boolean };
-}
-
-// ─── Service interfaces for future real integrations ──────────────────────────
+// ─── Legacy adapter interfaces (kept for backward compatibility) ──────────────
+// External code that previously injected PlaywrightService / LighthouseService
+// can continue to do so — those interfaces still work alongside the new engine.
 
 export interface PlaywrightService {
   runAudit(url: string): Promise<{
-    findings: AuditFindings;
+    findings: Record<string, unknown>;
     bugs: Array<{ title: string; description: string; severity: "critical" | "high" | "medium" | "low" }>;
     screenshots: Array<{ deviceType: "desktop" | "tablet" | "mobile"; dataUrl: string }>;
   }>;
@@ -34,180 +43,373 @@ export interface LighthouseService {
 }
 
 export interface AiBugAnalyzerService {
-  generateSummary(findings: AuditFindings, scores: { performance: number; accessibility: number; seo: number; bestPractices: number }, bugCount: number): string;
+  generateSummary(findings: Record<string, unknown>, scores: { performance: number; accessibility: number; seo: number; bestPractices: number }, bugCount: number): string;
 }
 
-// ─── Simulated implementations (replace with real engines in production) ──────
+// ─── Storage Layer ────────────────────────────────────────────────────────────
 
-const simulatedPlaywright: PlaywrightService = {
-  async runAudit(url: string) {
-    const findings: AuditFindings = {
-      homepageLoaded: true,
-      consoleErrors: [],
-      failedRequests: [],
-      brokenLinks: [],
-      formIssues: [],
-      networkErrors: [],
-      navigationChecked: true,
-      responsiveness: { desktop: true, tablet: true, mobile: true },
-    };
-
-    const bugs: Array<{ title: string; description: string; severity: "critical" | "high" | "medium" | "low" }> = [];
-    const rand = Math.random();
-
-    if (rand > 0.7) {
-      findings.consoleErrors.push("Uncaught TypeError: Cannot read properties of null");
-      bugs.push({ title: "JavaScript runtime error detected", description: "Console error: Uncaught TypeError: Cannot read properties of null. This may cause functionality failures.", severity: "high" });
-    }
-    if (rand > 0.5) {
-      findings.brokenLinks.push(`${url}/about`);
-      bugs.push({ title: "Broken link detected", description: `Link to ${url}/about returns 404 Not Found.`, severity: "medium" });
-    }
-    if (rand > 0.8) {
-      findings.failedRequests.push(`${url}/api/data`);
-      bugs.push({ title: "Failed network request", description: `API request to ${url}/api/data returned 500 Internal Server Error.`, severity: "critical" });
-    }
-    if (rand > 0.3) {
-      bugs.push({ title: "Missing form validation", description: "Contact form allows submission without required field validation.", severity: "medium" });
-    }
-    if (rand < 0.4) {
-      bugs.push({ title: "Missing alt text on images", description: "Several images are missing alt attribute, reducing accessibility score.", severity: "low" });
-    }
-
-    const placeholderPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
-    return {
-      findings,
-      bugs,
-      screenshots: [
-        { deviceType: "desktop" as const, dataUrl: placeholderPng },
-        { deviceType: "tablet" as const, dataUrl: placeholderPng },
-        { deviceType: "mobile" as const, dataUrl: placeholderPng },
-      ],
-    };
-  },
-};
-
-const simulatedLighthouse: LighthouseService = {
-  async runAudit(_url: string) {
-    const base = Math.random();
-    return {
-      performance: Math.round((0.55 + base * 0.4) * 100),
-      accessibility: Math.round((0.65 + base * 0.3) * 100),
-      seo: Math.round((0.60 + base * 0.35) * 100),
-      bestPractices: Math.round((0.70 + base * 0.25) * 100),
-    };
-  },
-};
-
-const simulatedAiAnalyzer: AiBugAnalyzerService = {
-  generateSummary(findings, scores, bugCount) {
-    const avgScore = Math.round((scores.performance + scores.accessibility + scores.seo + scores.bestPractices) / 4);
-    const issues = [];
-    if (scores.performance < 70) issues.push("performance optimization");
-    if (scores.accessibility < 80) issues.push("accessibility improvements");
-    if (scores.seo < 75) issues.push("SEO enhancements");
-    if (findings.consoleErrors.length > 0) issues.push("JavaScript errors");
-    if (findings.brokenLinks.length > 0) issues.push("broken links");
-
-    return `Audit completed with an overall score of ${avgScore}/100. Found ${bugCount} issue${bugCount !== 1 ? "s" : ""}.${
-      issues.length > 0 ? ` Key areas: ${issues.join(", ")}.` : " The site appears to be in good health."
-    } ${scores.performance < 70 ? "Performance is the most critical concern." : scores.performance >= 90 ? "Performance is excellent." : "Performance is acceptable but could be improved."}`;
-  },
-};
-
-// ─── Notification helper ──────────────────────────────────────────────────────
-
-async function notifyAllUsers(type: "audit_completed" | "audit_failed" | "critical_issue", title: string, message: string, relatedId: number, relatedType: string) {
+async function notifyAllUsers(
+  type: "audit_completed" | "audit_failed" | "critical_issue" | "audit_started",
+  title: string,
+  message: string,
+  relatedId: number,
+  relatedType: string,
+) {
   try {
     const users = await db.select({ id: usersTable.id }).from(usersTable);
     for (const user of users) {
-      await db.insert(notificationsTable).values({ userId: user.id, type, title, message, relatedId, relatedType });
+      await db.insert(notificationsTable).values({
+        userId: user.id,
+        type: type as "audit_completed" | "audit_failed" | "critical_issue",
+        title,
+        message,
+        relatedId,
+        relatedType,
+      });
     }
   } catch (err) {
     logger.error({ err }, "Failed to create notifications");
   }
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
+async function persistScannerScreenshots(auditRunId: number, deviceType: string, dataUrl: string) {
+  try {
+    await db.insert(screenshotsTable).values({
+      auditRunId,
+      deviceType: deviceType as "desktop" | "tablet" | "mobile",
+      dataUrl,
+    });
+  } catch (err) {
+    logger.error({ err, auditRunId, deviceType }, "Failed to save screenshot");
+  }
+}
 
-export async function runPlaywrightAudit(
+async function persistBug(
+  projectId: number,
+  auditRunId: number,
+  finding: AuditFinding,
+) {
+  await db.insert(bugsTable).values({
+    projectId,
+    auditRunId,
+    title: finding.title,
+    description: finding.description,
+    severity: finding.severity === "info" ? "low" : finding.severity,
+    status: "open",
+    priority: finding.severity === "info" ? "low" : finding.severity,
+  });
+}
+
+// ─── Score computation ────────────────────────────────────────────────────────
+
+function computeOverallScore(
+  perf: number,
+  acc: number,
+  seo: number,
+  security: number,
+  bestPractices: number,
+): number {
+  // Weighted average: performance and security have higher weight
+  return Math.round(
+    (perf * 0.25) + (acc * 0.2) + (seo * 0.2) + (security * 0.2) + (bestPractices * 0.15),
+  );
+}
+
+function extractFindings(result: Partial<AuditResult>): AuditFinding[] {
+  const findings: AuditFinding[] = [];
+
+  // From accessibility violations
+  if (result.accessibility?.violations) {
+    for (const v of result.accessibility.violations.filter(v => v.impact === "critical" || v.impact === "serious")) {
+      findings.push({
+        id: `a11y-${v.id}`,
+        category: "accessibility",
+        severity: v.impact === "critical" ? "critical" : "high",
+        title: v.description,
+        description: `${v.help}. Affects ${v.affectedElements} element(s). WCAG: ${v.wcagCriteria.join(", ")}`,
+        recommendation: `Review and remediate all ${v.affectedElements} element(s) failing rule "${v.id}". See: ${v.helpUrl ?? "https://www.w3.org/WAI/WCAG21/"}`,
+        scanner: "accessibility",
+        autoCreateBug: v.impact === "critical",
+      });
+    }
+  }
+
+  // From SEO issues
+  if (result.seo?.issues) {
+    for (const issue of result.seo.issues.filter(i => i.severity === "critical" || i.severity === "high")) {
+      findings.push({
+        id: `seo-${issue.id}`,
+        category: "seo",
+        severity: issue.severity,
+        title: issue.description,
+        description: issue.description,
+        recommendation: issue.recommendation,
+        scanner: "seo",
+        autoCreateBug: issue.severity === "critical",
+      });
+    }
+  }
+
+  // From security vulnerabilities
+  if (result.security?.vulnerabilities) {
+    for (const vuln of result.security.vulnerabilities.filter(v => v.severity === "critical" || v.severity === "high")) {
+      findings.push({
+        id: `sec-${vuln.id}`,
+        category: "security",
+        severity: vuln.severity,
+        title: vuln.title,
+        description: vuln.description + (vuln.cve ? ` (${vuln.cve})` : ""),
+        recommendation: vuln.recommendation,
+        scanner: "security",
+        autoCreateBug: true,
+      });
+    }
+  }
+
+  // From console errors
+  if (result.consoleErrors?.errors) {
+    const errors = result.consoleErrors.errors.filter(e => e.level === "error");
+    if (errors.length > 0) {
+      findings.push({
+        id: "console-errors",
+        category: "reliability",
+        severity: result.consoleErrors.uncaughtExceptions > 0 ? "high" : "medium",
+        title: `${errors.length} browser console error(s) detected`,
+        description: errors.map(e => e.message).slice(0, 3).join("\n"),
+        recommendation: "Review and fix all JavaScript errors to prevent user-facing failures",
+        scanner: "console-errors",
+        autoCreateBug: result.consoleErrors.uncaughtExceptions > 0,
+      });
+    }
+  }
+
+  // From broken links
+  if (result.brokenLinks?.brokenLinks && result.brokenLinks.brokenLinks.length > 0) {
+    findings.push({
+      id: "broken-links",
+      category: "reliability",
+      severity: result.brokenLinks.brokenLinks.some(l => l.statusCode >= 500) ? "high" : "medium",
+      title: `${result.brokenLinks.brokenLinks.length} broken link(s) detected`,
+      description: result.brokenLinks.brokenLinks.map(l => `${l.url} (${l.statusCode})`).slice(0, 5).join("\n"),
+      recommendation: "Fix or redirect all broken links to prevent SEO penalties and poor user experience",
+      scanner: "broken-links",
+      autoCreateBug: true,
+    });
+  }
+
+  // From network failures
+  if (result.networkRequests?.failedRequests && result.networkRequests.failedRequests.length > 0) {
+    const serverErrors = result.networkRequests.failedRequests.filter(r => r.statusCode >= 500);
+    if (serverErrors.length > 0) {
+      findings.push({
+        id: "network-failures",
+        category: "reliability",
+        severity: "high",
+        title: `${serverErrors.length} failed network request(s) returning 5xx errors`,
+        description: serverErrors.map(r => `${r.method} ${r.url} → ${r.statusCode}`).slice(0, 3).join("\n"),
+        recommendation: "Investigate server-side errors on the failing endpoints and add proper error handling",
+        scanner: "network",
+        autoCreateBug: true,
+      });
+    }
+  }
+
+  return findings;
+}
+
+// ─── Main Engine ──────────────────────────────────────────────────────────────
+
+export async function runAuditEngine(
   auditRunId: number,
   url: string,
-  playwright: PlaywrightService = simulatedPlaywright,
-  lighthouse: LighthouseService = simulatedLighthouse,
-  aiAnalyzer: AiBugAnalyzerService = simulatedAiAnalyzer,
 ): Promise<void> {
   const startTime = Date.now();
 
   try {
+    // ── Stage: Initializing ─────────────────────────────────────────────────
     await db.update(auditRunsTable)
       .set({ status: "running", startedAt: new Date() })
       .where(eq(auditRunsTable.id, auditRunId));
 
-    logger.info({ auditRunId, url }, "Starting audit");
+    const [run] = await db.select({ projectId: auditRunsTable.projectId })
+      .from(auditRunsTable)
+      .where(eq(auditRunsTable.id, auditRunId))
+      .limit(1);
 
-    // Simulate audit duration (3-8 seconds)
-    await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 5000));
+    if (!run) throw new Error(`Audit run ${auditRunId} not found`);
 
-    const [auditResult, lighthouseScores] = await Promise.all([
-      playwright.runAudit(url),
-      lighthouse.runAudit(url),
-    ]);
+    logger.info({ auditRunId, url }, "Audit engine started");
 
-    const durationMs = Date.now() - startTime;
-    const overallScore = Math.round(
-      (lighthouseScores.performance + lighthouseScores.accessibility + lighthouseScores.seo + lighthouseScores.bestPractices) / 4
+    const context: AuditContext = {
+      url,
+      auditRunId,
+      projectId: run.projectId,
+      environment: "production",
+      options: { screenshotDevices: ["desktop", "tablet", "mobile"] },
+    };
+
+    const result: Partial<AuditResult> = {};
+
+    // ── Stage: Running Performance Scanner ─────────────────────────────────
+    logger.info({ auditRunId }, "Running performance scanner");
+    result.performance = await performanceScanner.run(context);
+
+    // ── Stage: Running Accessibility Scanner ────────────────────────────────
+    logger.info({ auditRunId }, "Running accessibility scanner");
+    result.accessibility = await accessibilityScanner.run(context);
+
+    // ── Stage: Running SEO Scanner ──────────────────────────────────────────
+    logger.info({ auditRunId }, "Running SEO scanner");
+    result.seo = await seoScanner.run(context);
+
+    // ── Stage: Running Security Scanner ────────────────────────────────────
+    logger.info({ auditRunId }, "Running security scanner");
+    result.security = await securityScanner.run(context);
+
+    // ── Stage: Running Broken Link Scanner ─────────────────────────────────
+    logger.info({ auditRunId }, "Running broken link scanner");
+    result.brokenLinks = await brokenLinkScanner.run(context);
+
+    // ── Stage: Collecting Console Logs ──────────────────────────────────────
+    logger.info({ auditRunId }, "Collecting console errors");
+    result.consoleErrors = await consoleErrorCollector.run(context);
+
+    // ── Stage: Analyzing Network ────────────────────────────────────────────
+    logger.info({ auditRunId }, "Analyzing network requests");
+    result.networkRequests = await networkAnalyzer.run(context);
+
+    // ── Stage: Capturing Screenshots ────────────────────────────────────────
+    logger.info({ auditRunId }, "Capturing screenshots");
+    result.screenshots = await screenshotCapture.run(context);
+
+    // ── Stage: Detecting Technologies ───────────────────────────────────────
+    logger.info({ auditRunId }, "Detecting technologies");
+    result.technologies = await technologyDetector.run(context);
+
+    // ── Compute scores and extract findings ─────────────────────────────────
+    const perfScore = result.performance?.scores.performance ?? 70;
+    const accScore = result.accessibility?.score ?? 70;
+    const seoScore = result.seo?.score ?? 70;
+    const secScore = result.security?.score ?? 70;
+    const bpScore = Math.round(
+      ((result.security?.ssl.valid ? 20 : 0) +
+        (result.consoleErrors && result.consoleErrors.totalErrors === 0 ? 30 : 15) +
+        (result.brokenLinks && result.brokenLinks.brokenLinks.length === 0 ? 30 : 15) +
+        20),
     );
 
-    const [run] = await db.select({ projectId: auditRunsTable.projectId })
-      .from(auditRunsTable).where(eq(auditRunsTable.id, auditRunId)).limit(1);
+    const overallScore = computeOverallScore(perfScore, accScore, seoScore, secScore, bpScore);
+    const findings = extractFindings(result);
+    const bugsToCreate = findings.filter(f => f.autoCreateBug);
 
-    const hasCritical = auditResult.bugs.some(b => b.severity === "critical");
+    // ── Stage: Generating AI Summary ────────────────────────────────────────
+    logger.info({ auditRunId }, "Generating AI summary");
+    const contextWithScores: AuditContext = {
+      ...context,
+      options: {
+        ...context.options,
+        _scores: {
+          performanceScore: perfScore,
+          accessibilityScore: accScore,
+          seoScore: seoScore,
+          securityScore: secScore,
+          bestPracticesScore: bpScore,
+          bugsFound: bugsToCreate.length,
+          criticalBugs: bugsToCreate.filter(f => f.severity === "critical").length,
+        },
+      } as AuditContext["options"],
+    };
+    result.aiSummary = await aiSummaryGenerator.run(contextWithScores);
 
-    for (const bug of auditResult.bugs) {
-      await db.insert(bugsTable).values({
-        ...bug,
-        projectId: run.projectId,
-        auditRunId,
-        status: "open",
-        priority: bug.severity,
-      });
+    const durationMs = Date.now() - startTime;
+    const hasCritical = bugsToCreate.some(f => f.severity === "critical");
+
+    // ── Stage: Persisting to database ───────────────────────────────────────
+    logger.info({ auditRunId, bugCount: bugsToCreate.length }, "Persisting audit results");
+
+    // Save bugs
+    for (const finding of bugsToCreate) {
+      try {
+        await persistBug(run.projectId, auditRunId, finding);
+      } catch (err) {
+        logger.warn({ err, finding: finding.id }, "Failed to persist bug");
+      }
     }
 
-    for (const screenshot of auditResult.screenshots) {
-      await db.insert(screenshotsTable).values({ auditRunId, deviceType: screenshot.deviceType, dataUrl: screenshot.dataUrl });
+    // Save screenshots
+    if (result.screenshots?.screenshots) {
+      for (const shot of result.screenshots.screenshots) {
+        await persistScannerScreenshots(auditRunId, shot.deviceType, shot.dataUrl);
+      }
     }
 
-    const aiSummary = aiAnalyzer.generateSummary(auditResult.findings, lighthouseScores, auditResult.bugs.length);
+    // Build raw findings JSONB for storage
+    const rawFindings: Record<string, unknown> = {
+      performance: result.performance,
+      accessibility: result.accessibility,
+      seo: result.seo,
+      security: result.security,
+      brokenLinks: result.brokenLinks,
+      consoleErrors: result.consoleErrors,
+      networkRequests: result.networkRequests,
+      technologies: result.technologies,
+    };
 
+    const aiSummaryText = result.aiSummary?.executiveSummary ?? `Audit completed with overall score ${overallScore}/100. Found ${bugsToCreate.length} issue(s).`;
+
+    // ── Stage: Creating report ───────────────────────────────────────────────
     await db.update(auditRunsTable).set({
       status: "completed",
       completedAt: new Date(),
       durationMs,
       overallScore,
-      bugsFound: auditResult.bugs.length,
-      performanceScore: lighthouseScores.performance,
-      accessibilityScore: lighthouseScores.accessibility,
-      seoScore: lighthouseScores.seo,
-      bestPracticesScore: lighthouseScores.bestPractices,
-      findings: auditResult.findings as unknown as Record<string, unknown>,
-      aiSummary,
+      bugsFound: bugsToCreate.length,
+      performanceScore: perfScore,
+      accessibilityScore: accScore,
+      seoScore: seoScore,
+      bestPracticesScore: bpScore,
+      findings: rawFindings as unknown as Record<string, unknown>,
+      aiSummary: aiSummaryText,
     }).where(eq(auditRunsTable.id, auditRunId));
 
-    await notifyAllUsers("audit_completed", "Audit Completed", `Audit #${auditRunId} finished with score ${overallScore}/100. Found ${auditResult.bugs.length} issue(s).`, auditRunId, "audit");
+    // ── Notifications ────────────────────────────────────────────────────────
+    await notifyAllUsers(
+      "audit_completed",
+      "Audit Completed",
+      `Audit #${auditRunId} finished with score ${overallScore}/100. Found ${bugsToCreate.length} issue(s).`,
+      auditRunId,
+      "audit",
+    );
 
     if (hasCritical) {
-      await notifyAllUsers("critical_issue", "Critical Issue Found", `Audit #${auditRunId} found a critical severity bug that requires immediate attention.`, auditRunId, "audit");
+      await notifyAllUsers(
+        "critical_issue",
+        "Critical Issue Found",
+        `Audit #${auditRunId} found ${bugsToCreate.filter(f => f.severity === "critical").length} critical severity bug(s) requiring immediate attention.`,
+        auditRunId,
+        "audit",
+      );
     }
 
-    logger.info({ auditRunId, bugsFound: auditResult.bugs.length, overallScore }, "Audit completed");
+    logger.info({ auditRunId, bugsFound: bugsToCreate.length, overallScore, durationMs }, "Audit completed");
   } catch (error) {
-    logger.error({ auditRunId, error }, "Audit failed");
+    logger.error({ auditRunId, error }, "Audit engine failed");
     await db.update(auditRunsTable).set({
       status: "failed",
       completedAt: new Date(),
       durationMs: Date.now() - startTime,
     }).where(eq(auditRunsTable.id, auditRunId));
-    await notifyAllUsers("audit_failed", "Audit Failed", `Audit #${auditRunId} encountered an error and could not complete.`, auditRunId, "audit");
+    await notifyAllUsers(
+      "audit_failed",
+      "Audit Failed",
+      `Audit #${auditRunId} encountered an error and could not complete.`,
+      auditRunId,
+      "audit",
+    );
   }
 }
+
+// ─── Backward-compatible export ───────────────────────────────────────────────
+// Routes that call runPlaywrightAudit() continue to work unchanged.
+
+export const runPlaywrightAudit = runAuditEngine;

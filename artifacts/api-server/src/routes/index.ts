@@ -10,6 +10,7 @@ import reportsRouter from "./reports";
 import dashboardRouter from "./dashboard";
 import scheduledAuditsRouter from "./scheduled-audits";
 import notificationsRouter from "./notifications";
+import feedbackRouter from "./feedback";
 import path from "path";
 import fs from "fs";
 
@@ -26,6 +27,7 @@ router.use(reportsRouter);
 router.use(dashboardRouter);
 router.use(scheduledAuditsRouter);
 router.use(notificationsRouter);
+router.use(feedbackRouter);
 
 // Serve generated report files
 const workspaceRoot = process.cwd().endsWith(path.join("artifacts", "api-server"))

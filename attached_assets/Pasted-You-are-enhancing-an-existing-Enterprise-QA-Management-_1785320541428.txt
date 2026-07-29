@@ -1,0 +1,622 @@
+You are enhancing an existing Enterprise QA Management Platform.
+
+IMPORTANT:
+
+- Do NOT create any new dashboard or analytics page.
+- Do NOT redesign existing pages.
+- Do NOT remove or modify existing functionality.
+- The existing UI already contains:
+
+Projects
+
+Run Audit
+
+Audit History
+
+Audit Details
+
+Bug Tracker
+
+Reports
+
+AI Copilot
+
+Executive Dashboard
+
+Release Readiness
+
+Security & Compliance
+
+API Monitoring
+
+Test Management
+
+Team Collaboration
+
+These must remain unchanged.
+
+Reuse the existing enterprise design system, components, spacing, typography and layout.
+
+===========================================================
+PART 1 — WEBSITE AUDIT ENGINE (PRIMARY OBJECTIVE)
+===========================================================
+
+The goal is to make the existing **Run Audit** button capable of executing a real audit workflow instead of relying on hardcoded UI data.
+
+Create a modular Audit Execution Engine.
+
+Architecture example:
+
+Audit Engine
+
+↓
+
+Performance Scanner
+
+Accessibility Scanner
+
+SEO Scanner
+
+Security Scanner
+
+Broken Link Scanner
+
+Console Error Collector
+
+Network Request Analyzer
+
+Screenshot Capture
+
+Technology Detector
+
+AI Summary Generator
+
+Each scanner must be completely independent.
+
+Each scanner returns structured JSON.
+
+The Audit Engine combines all scanner outputs into one reusable Audit Result object.
+
+For now use mock implementations behind these interfaces.
+
+DO NOT hardcode values inside UI components anymore.
+
+===========================================================
+
+Create reusable TypeScript interfaces.
+
+Examples:
+
+AuditScanner
+
+AuditResult
+
+ScannerResponse
+
+AuditExecution
+
+AuditSummary
+
+AuditFinding
+
+PerformanceMetrics
+
+AccessibilityMetrics
+
+SEOAnalysis
+
+SecurityAnalysis
+
+ConsoleErrors
+
+NetworkRequests
+
+TechnologyProfile
+
+ScreenshotResult
+
+===========================================================
+
+Separate the architecture into independent layers.
+
+Audit Execution
+
+Audit Storage
+
+Audit Analysis
+
+Audit Reporting
+
+AI Analysis
+
+Notification Layer
+
+===========================================================
+
+Prepare interfaces for future integrations.
+
+Examples:
+
+Lighthouse
+
+Playwright
+
+axe-core
+
+OWASP scanners
+
+Security Header analyzers
+
+Broken Link Crawlers
+
+Tech Stack Detection
+
+Browser Performance APIs
+
+PageSpeed APIs
+
+Future Cloud Scanners
+
+The architecture should allow replacing mock scanners with real implementations with minimal code changes.
+
+===========================================================
+
+When clicking Run Audit,
+
+simulate a real execution flow using the new architecture.
+
+Example execution:
+
+Queued
+
+↓
+
+Initializing Engine
+
+↓
+
+Preparing Scanners
+
+↓
+
+Running Performance Scanner
+
+↓
+
+Running Accessibility Scanner
+
+↓
+
+Running SEO Scanner
+
+↓
+
+Running Security Scanner
+
+↓
+
+Collecting Console Logs
+
+↓
+
+Capturing Screenshots
+
+↓
+
+Generating AI Summary
+
+↓
+
+Creating Audit Report
+
+↓
+
+Completed
+
+Every stage should update through the Audit Execution Engine rather than static UI values.
+
+===========================================================
+
+The Audit Engine must automatically populate the existing modules.
+
+Audit Details
+
+Audit History
+
+Bug Tracker
+
+Reports
+
+AI Copilot
+
+Project Dashboard
+
+without changing their UI.
+
+Use the new architecture to feed those screens.
+
+===========================================================
+
+Store audit results using reusable models instead of component state.
+
+Every audit should have
+
+Audit ID
+
+Execution Time
+
+Duration
+
+Status
+
+Project
+
+Environment
+
+Scanner Results
+
+Overall Score
+
+Performance Score
+
+Accessibility Score
+
+SEO Score
+
+Security Score
+
+Best Practices
+
+Findings
+
+Generated Bugs
+
+AI Summary
+
+Historical Comparison
+
+===========================================================
+
+The system should already be prepared for future features such as
+
+Scheduled Audits
+
+Parallel Scanner Execution
+
+CI/CD Integration
+
+Incremental Audits
+
+Real-time Progress Updates
+
+Cloud Execution
+
+Distributed Scanners
+
+without changing the architecture.
+
+===========================================================
+PART 2 — FEEDBACK & IDEAS MODULE
+===========================================================
+
+Add ONE new sidebar module only.
+
+💡 Feedback & Ideas
+
+Do NOT redesign the sidebar.
+
+Use the same enterprise design language already used across the application.
+
+===========================================================
+
+Create an enterprise feedback management system.
+
+===========================================================
+
+Dashboard should contain KPI cards.
+
+Total Suggestions
+
+Pending Review
+
+Accepted
+
+In Progress
+
+Implemented
+
+Rejected
+
+Most Requested Feature
+
+Average Response Time
+
+===========================================================
+
+Suggestion List
+
+Professional searchable table.
+
+Columns
+
+ID
+
+Title
+
+Category
+
+Priority
+
+Status
+
+Votes
+
+Submitted By
+
+Assigned To
+
+Created Date
+
+Affected Module
+
+Actions
+
+Provide
+
+Search
+
+Filtering
+
+Sorting
+
+Pagination
+
+===========================================================
+
+Submit Suggestion
+
+Fields
+
+Title
+
+Description
+
+Category
+
+Affected Module
+
+Priority
+
+Business Impact
+
+Expected Benefit
+
+Screenshot Upload
+
+Video Upload
+
+Attachments
+
+Browser
+
+Environment
+
+Email (Optional)
+
+Anonymous Toggle
+
+===========================================================
+
+Categories
+
+UI / UX
+
+Projects
+
+Audits
+
+Bug Tracker
+
+Reports
+
+AI Copilot
+
+Security
+
+Performance
+
+API Monitoring
+
+Automation
+
+Accessibility
+
+Integrations
+
+Test Management
+
+Release Readiness
+
+Other
+
+===========================================================
+
+Workflow
+
+New
+
+↓
+
+Under Review
+
+↓
+
+Accepted
+
+↓
+
+Planned
+
+↓
+
+In Progress
+
+↓
+
+Testing
+
+↓
+
+Implemented
+
+↓
+
+Released
+
+or
+
+Rejected
+
+===========================================================
+
+Allow users to
+
+👍 Upvote
+
+⭐ Favourite
+
+👀 Watch Suggestion
+
+Comment
+
+Reply
+
+Mention Users
+
+Attach Files
+
+===========================================================
+
+Every suggestion should have
+
+Timeline
+
+Discussion
+
+Status History
+
+Votes
+
+Watchers
+
+Developer Comments
+
+Product Owner Comments
+
+Related Suggestions
+
+Linked Bug
+
+Linked Project
+
+===========================================================
+
+Reuse the existing AI capabilities.
+
+Automatically analyse every suggestion.
+
+Generate
+
+Category
+
+Priority
+
+Business Impact
+
+Estimated Development Effort
+
+Complexity
+
+Risk Level
+
+Suggested Sprint
+
+Suggested Team
+
+Possible Duplicate Suggestions
+
+AI Summary
+
+Confidence Score
+
+===========================================================
+
+Allow admins to convert a suggestion into
+
+Bug
+
+Project Task
+
+Audit Recommendation
+
+Release Item
+
+Developer Task
+
+without leaving the page.
+
+===========================================================
+
+Analytics
+
+Suggestions Per Month
+
+Acceptance Rate
+
+Implementation Rate
+
+Most Requested Modules
+
+Priority Distribution
+
+Category Distribution
+
+Average Resolution Time
+
+Developer Response Time
+
+===========================================================
+
+Notifications
+
+Notify users when
+
+Suggestion Accepted
+
+Rejected
+
+Comment Added
+
+Status Changed
+
+Implemented
+
+Released
+
+===========================================================
+
+FINAL REQUIREMENTS
+
+This is NOT a redesign task.
+
+Do NOT add new dashboards unrelated to these features.
+
+Focus on:
+
+1. Building a clean, production-ready Audit Engine architecture behind the existing UI.
+
+2. Adding one enterprise-grade Feedback & Ideas module integrated into the existing QA Portal.
+
+Use realistic enterprise mock data where external integrations are not yet available.
+
+Keep the entire solution future-ready so real integrations (Playwright, Lighthouse, axe-core, OWASP, GitHub Actions, Jenkins, Azure DevOps, SonarQube, etc.) can be connected later with minimal code changes.

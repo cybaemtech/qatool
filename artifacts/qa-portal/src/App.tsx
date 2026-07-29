@@ -31,6 +31,7 @@ import TestManagement from "@/pages/test-management";
 import TeamCollaboration from "@/pages/team-collaboration";
 import AiCopilot from "@/pages/ai-copilot";
 import AiFileAnalysis from "@/pages/ai-file-analysis";
+import Feedback from "@/pages/feedback";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -155,6 +156,12 @@ function AppRouter() {
       <Route path="/ai-file-analysis">
         <ProtectedRoute>
           <Layout><AiFileAnalysis /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/feedback">
+        <ProtectedRoute>
+          <Layout><Feedback /></Layout>
         </ProtectedRoute>
       </Route>
 
