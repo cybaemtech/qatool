@@ -62,9 +62,12 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Setup status
 
-- `DATABASE_URL` is provided by Replit's built-in Postgres; schema was pushed with `pnpm --filter @workspace/db run push`.
-- Demo data (4 users, 5 projects, audits, bugs, reports, notifications, scheduled audits) was populated by running the repo's own seed script: `pnpm --filter @workspace/db run seed` (`lib/db/scripts/seed.ts`). Re-running it truncates and regenerates the same demo dataset. Demo logins: `admin@qa.dev`, `sarah.chen@qa.dev`, `marcus.johnson@qa.dev`, `priya.patel@qa.dev`, all with password `password`.
-- Workflows `artifacts/api-server: API Server` and `artifacts/qa-portal: web` are running; `artifacts/mockup-sandbox: Component Preview Server` exists but is not needed for normal use.
+- `DATABASE_URL` is provided by Replit's built-in Postgres (runtime-managed; do not set manually). Schema was pushed with `pnpm --filter @workspace/db run push`.
+- Demo data (4 users, 5 projects, 31 audit runs, 67 bugs, 17 reports, 51 notifications, 3 scheduled audits) was seeded via `pnpm --filter @workspace/db run seed`. Re-running truncates and regenerates the same demo dataset. Demo logins: `admin@qa.dev`, `sarah.chen@qa.dev`, `marcus.johnson@qa.dev`, `priya.patel@qa.dev`, all with password `password`.
+- Two workflows are configured and running:
+  - **Start application** — `pnpm --filter @workspace/qa-portal run dev` (frontend, port 3000)
+  - **API Server** — `PORT=8080 pnpm --filter @workspace/api-server run dev` (Express API, port 8080)
+- `customFetch` is exported from `lib/api-client-react/src/index.ts` (added during import setup; required by `feedback.tsx`).
 
 ## Gotchas
 
