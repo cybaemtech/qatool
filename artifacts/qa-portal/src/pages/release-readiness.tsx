@@ -120,7 +120,7 @@ export default function ReleaseReadiness() {
 
   const { data: projects = [] } = useListProjects();
   const { data: audits = [] } = useListAudits({ limit: 500 });
-  const { data: allBugs = [] } = useListBugs({ limit: 1000 });
+  const { data: allBugs = [] } = useListBugs({});
   const { data: summary } = useGetDashboardSummary();
   const { data: perfHistory = [] } = useGetPerformanceHistory();
 
@@ -149,9 +149,9 @@ export default function ReleaseReadiness() {
       ? Math.round(latestAudits.reduce((s, a) => s + (a.bestPracticesScore ?? 0), 0) / latestAudits.length)
       : 0;
 
-    const criticalBugs = allBugs.filter(b => b.severity === "critical" && b.status !== "fixed");
-    const highBugs = allBugs.filter(b => b.severity === "high" && b.status !== "fixed");
-    const openBugs = allBugs.filter(b => b.status !== "fixed");
+    const criticalBugs = allBugs.filter(b => b.severity === "critical" && b.status !== "resolved");
+    const highBugs = allBugs.filter(b => b.severity === "high" && b.status !== "resolved");
+    const openBugs = allBugs.filter(b => b.status !== "resolved");
 
     // Release score: weighted average
     const releaseScore = Math.round(

@@ -125,10 +125,10 @@ class DefaultAuditReportingService implements AuditReportingService {
         lines.push(hr);
       }
 
-      if (technologies?.detected && technologies.detected.length > 0) {
+      if (technologies?.libraries && technologies.libraries.length > 0) {
         lines.push("DETECTED TECHNOLOGIES", hr);
         lines.push(
-          technologies.detected
+          technologies.libraries
             .map((t) => `  • ${t.name} ${t.version ?? ""}`.trim())
             .join("\n"),
         );

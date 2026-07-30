@@ -398,7 +398,7 @@ export default function AuditDetail() {
     failedRequests: Array<{ url: string; statusCode: number; method: string }>;
   };
   type FindingsPipeline = {
-    stages: Array<{ name: string; label: string; order: number; status: string; startedAt?: string; completedAt?: string; durationMs?: number }>;
+    stages: Array<{ name: string; label: string; order: number; status: string; error?: string; startedAt?: string; completedAt?: string; durationMs?: number }>;
     completedAt?: string;
     durationMs?: number;
   };

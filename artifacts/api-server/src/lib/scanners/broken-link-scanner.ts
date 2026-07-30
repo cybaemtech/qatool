@@ -24,7 +24,14 @@ const mockBrokenLinkAdapter: BrokenLinkAdapter = {
     const linksChecked = Math.round(20 + rand * maxLinks);
     const domain = new URL(url).hostname;
 
-    const links: BrokenLinkAdapter extends { crawl: (...args: unknown[]) => Promise<{ links: infer L[] }> } ? L[] : never[] = [];
+    const links: Array<{
+      url: string;
+      statusCode: number;
+      foundOn: string;
+      linkText?: string;
+      isExternal: boolean;
+      redirectTo?: string;
+    }> = [];
 
     // Add mostly good links
     for (let i = 0; i < linksChecked; i++) {
@@ -40,7 +47,7 @@ const mockBrokenLinkAdapter: BrokenLinkAdapter = {
       });
     }
 
-    return { links: links as ReturnType<BrokenLinkAdapter["crawl"]> extends Promise<{ links: Array<infer L> }> ? L[] : never[] };
+    return { links };
   },
 };
 

@@ -1,1 +1,6 @@
 - [Orval schema naming collision](orval-collision.md) — `*Body` suffix in OpenAPI schema names causes Orval to export Zod validators AND TS types with the same name; use `*Input`/`*Update` instead.
+- [TS6305 fix — remove tsconfig references](ts6305-fix.md) — qa-portal tsconfig had references to api-client-react causing TS6305; removed since bundler moduleResolution resolves via exports field.
+- [BugStatus enum](bug-status-enum.md) — valid statuses are open/in_progress/resolved/ignored; "fixed" does not exist; cicd-pipeline and release-readiness had this wrong.
+- [ListBugsParams has no limit](list-bugs-params.md) — GET /bugs has no limit query param; ListBugsParams doesn't accept it; ListAuditsParams does have limit.
+- [Feedback route uses plain helpers not Zod](feedback-route-pattern.md) — feedback.ts uses parseCreateSuggestion/parseUpdateSuggestion helpers (not Zod schemas); insert needs any-cast due to category string vs union type mismatch.
+- [Scanners are all mock](mock-scanners.md) — all 10 scanners use Math.random(); adapter interface ready for real tools; live-audit-scanner.tsx progress UI is also simulated.

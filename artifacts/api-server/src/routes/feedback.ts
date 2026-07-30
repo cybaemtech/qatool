@@ -196,16 +196,17 @@ router.get("/feedback", requireAuth, async (req, res) => {
 
 // POST /feedback — create suggestion
 router.post("/feedback", requireAuth, async (req, res) => {
-  const parsed = CreateSuggestionSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
+  const parsed = parseCreateSuggestion(req.body as Record<string, unknown>);
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
     return;
   }
 
   const { anonymous, email, ...rest } = parsed.data;
   const ai = generateAIAnalysis(rest.title, rest.description, rest.category ?? "other");
 
-  const [suggestion] = await db.insert(feedbackSuggestionsTable).values({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const insertValues: any = {
     ...rest,
     anonymous: anonymous ?? false,
     email: anonymous ? null : (email ?? null),
@@ -220,7 +221,8 @@ router.post("/feedback", requireAuth, async (req, res) => {
     aiSuggestedTeam: ai.team,
     aiSummary: ai.summary,
     aiConfidenceScore: ai.confidence,
-  }).returning();
+  };
+  const [suggestion] = await db.insert(feedbackSuggestionsTable).values(insertValues).returning();
 
   res.status(201).json({
     ...suggestion,
@@ -310,8 +312,8 @@ router.patch("/feedback/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const parsed = UpdateSuggestionSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid request" }); return; }
+  const parsed = parseUpdateSuggestion(req.body as Record<string, unknown>);
+  if ("error" in parsed) { res.status(400).json({ error: parsed.error }); return; }
 
   const [updated] = await db.update(feedbackSuggestionsTable)
     .set({ ...parsed.data, updatedAt: new Date() })
@@ -380,8 +382,10 @@ router.post("/feedback/:id/comments", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
-  const parsed = CreateCommentSchema.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: "Invalid request" }); return; }
+  const commentBody = req.body as Record<string, unknown>;
+  const commentContent = typeof commentBody.content === "string" ? commentBody.content : "";
+  const commentParentId = typeof commentBody.parentId === "number" ? commentBody.parentId : null;
+  if (!commentContent.trim()) { res.status(400).json({ error: "Comment content is required" }); return; }
 
   const [suggestion] = await db.select({ id: feedbackSuggestionsTable.id })
     .from(feedbackSuggestionsTable).where(eq(feedbackSuggestionsTable.id, id)).limit(1);
@@ -394,8 +398,8 @@ router.post("/feedback/:id/comments", requireAuth, async (req, res) => {
   const [comment] = await db.insert(feedbackCommentsTable).values({
     suggestionId: id,
     authorId: req.user!.userId,
-    content: parsed.data.content,
-    parentId: parsed.data.parentId ?? null,
+    content: commentContent,
+    parentId: commentParentId,
     role,
   }).returning();
 

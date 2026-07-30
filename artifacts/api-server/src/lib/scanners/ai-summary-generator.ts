@@ -251,4 +251,3 @@ class AISummaryGenerator implements AuditScanner<AISummary> {
 
 export default new AISummaryGenerator();
 export { AISummaryGenerator, generateMockSummary };
-export type { AISummaryInput };

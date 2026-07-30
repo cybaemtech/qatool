@@ -146,13 +146,13 @@ export default function CicdPipeline() {
 
   const { data: projects = [] } = useListProjects();
   const { data: audits = [] } = useListAudits({ limit: 200 });
-  const { data: bugs = [] } = useListBugs({ limit: 500 });
+  const { data: bugs = [] } = useListBugs({});
 
   // ── Derive realistic data from real API data ──────────────────────────────
   const data = useMemo(() => {
     const completedAudits = audits.filter(a => a.status === "completed");
     const totalAudits = audits.length;
-    const criticalBugs = bugs.filter(b => b.severity === "critical" && b.status !== "fixed").length;
+    const criticalBugs = bugs.filter(b => b.severity === "critical" && b.status !== "resolved").length;
 
     // KPIs derived from real data
     const activePipelines = Math.min(6, Math.max(1, Math.ceil(projects.length * 1.2)));
