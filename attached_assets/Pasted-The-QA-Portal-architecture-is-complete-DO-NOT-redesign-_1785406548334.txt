@@ -1,0 +1,369 @@
+The QA Portal architecture is complete.
+
+DO NOT redesign any UI.
+DO NOT create new pages.
+DO NOT change navigation.
+DO NOT rebuild the Audit Engine.
+DO NOT replace the existing AuditResult model.
+
+Your ONLY objective is to replace every remaining mock, simulated, generated, random, placeholder or template-based Website Audit scanner implementation with real website analysis.
+
+=========================================================
+CURRENT STATUS
+=========================================================
+
+The application already has:
+
+✔ Audit Engine
+✔ Audit Pipeline
+✔ Scanner Registry
+✔ Audit Execution Service
+✔ Audit Storage
+✔ Audit Reporting
+✔ Audit Analysis
+✔ Audit History
+✔ Audit Details
+✔ Bug Tracker
+✔ Reports
+✔ AI Copilot
+✔ JSON Export
+✔ PDF Export
+
+These MUST remain unchanged.
+
+The UI is complete.
+
+Only the scanner implementations need to become real.
+
+=========================================================
+IMPORTANT REQUIREMENT
+=========================================================
+
+The application MUST NEVER generate fake audit data.
+
+Search the entire codebase for any implementation using:
+
+- Math.random()
+- generated scores
+- hardcoded scores
+- placeholder findings
+- fake screenshots
+- template recommendations
+- mock scanners
+- demo data
+- simulated audit results
+
+Replace every one of them.
+
+If a scanner cannot execute a real analysis because of an environment limitation, DO NOT fabricate results.
+
+Instead return:
+
+Status:
+NOT AVAILABLE
+
+Reason:
+<exact technical reason>
+
+This is mandatory.
+
+Never fall back to generated values.
+
+=========================================================
+IMPLEMENT REAL SCANNERS
+=========================================================
+
+1. PERFORMANCE SCANNER
+
+Replace the mock Performance Scanner with Lighthouse.
+
+Return REAL:
+
+- Performance Score
+- First Contentful Paint
+- Largest Contentful Paint
+- Total Blocking Time
+- Cumulative Layout Shift
+- Speed Index
+- Time To Interactive
+
+Use Lighthouse JSON output.
+
+Populate the existing Performance UI.
+
+=========================================================
+
+2. ACCESSIBILITY SCANNER
+
+Replace the mock scanner with axe-core.
+
+Return REAL:
+
+- WCAG violations
+- Severity
+- Affected elements
+- Help URL
+- Impact
+- Suggested Fix
+
+Populate:
+
+Accessibility Score
+
+Accessibility Violations
+
+=========================================================
+
+3. SEO SCANNER
+
+Replace template SEO results with real checks.
+
+Verify:
+
+- title
+- meta description
+- robots
+- sitemap
+- canonical
+- heading structure
+- image alt
+- Open Graph
+- Twitter Cards
+- structured data
+
+Generate findings only from the scanned page.
+
+=========================================================
+
+4. SECURITY SCANNER
+
+Perform real checks for:
+
+- HTTPS
+- Security Headers
+- CSP
+- HSTS
+- X-Frame-Options
+- Referrer Policy
+- X-Content-Type-Options
+- Cookie flags
+- Mixed Content
+
+Do not invent vulnerabilities.
+
+=========================================================
+
+5. BROKEN LINK SCANNER
+
+Actually crawl the submitted website.
+
+Return:
+
+- Broken URL
+- HTTP Status
+- Referrer Page
+
+Generate bugs only for real broken links.
+
+=========================================================
+
+6. CONSOLE ERROR SCANNER
+
+Using Playwright:
+
+Capture REAL:
+
+- console.error
+- console.warn
+- uncaught exceptions
+
+Store complete console messages.
+
+=========================================================
+
+7. NETWORK REQUEST SCANNER
+
+Using Playwright:
+
+Capture:
+
+- Request URL
+- Status Code
+- Response Time
+- Failed Requests
+- Redirects
+
+No placeholder values.
+
+=========================================================
+
+8. SCREENSHOT SCANNER
+
+Using Playwright.
+
+Capture REAL screenshots for:
+
+Desktop
+
+Tablet
+
+Mobile
+
+Replace placeholder images.
+
+Store real screenshots.
+
+=========================================================
+
+9. TECHNOLOGY DETECTION
+
+Detect actual technologies.
+
+Examples:
+
+React
+
+Vue
+
+Angular
+
+Next.js
+
+Nuxt
+
+WordPress
+
+Shopify
+
+Bootstrap
+
+Tailwind
+
+Webpack
+
+Vite
+
+Cloudflare
+
+etc.
+
+Do not use hardcoded lists.
+
+=========================================================
+
+10. AI SUMMARY
+
+The AI Summary must NOT use predefined templates.
+
+Generate summaries ONLY from the real scanner outputs.
+
+The AI Summary should explain:
+
+- Root causes
+- Highest priority fixes
+- Business impact
+- Recommended order of fixing
+
+It may remain rule-based if no LLM is configured, but every statement must come directly from the real audit findings.
+
+=========================================================
+BUG TRACKER
+=========================================================
+
+Generate Bugs ONLY from actual scanner findings.
+
+No fake bugs.
+
+Each bug must reference:
+
+Scanner
+
+Finding
+
+Severity
+
+Recommendation
+
+Affected URL
+
+=========================================================
+REPORTS
+=========================================================
+
+Reports must be generated from the real AuditResult.
+
+Remove any template recommendations that are not supported by scanner findings.
+
+=========================================================
+VERIFY THE IMPLEMENTATION
+=========================================================
+
+Run the SAME website at least THREE consecutive times.
+
+The same website should produce nearly identical results.
+
+Small Lighthouse variance is acceptable.
+
+Large random fluctuations are NOT acceptable.
+
+Performance may vary slightly.
+
+Accessibility should remain consistent.
+
+SEO should remain consistent.
+
+Broken Links should remain consistent.
+
+Security findings should remain consistent.
+
+Console errors should remain consistent.
+
+=========================================================
+IF THERE IS AN ENVIRONMENT LIMITATION
+=========================================================
+
+If Lighthouse, Playwright or Chromium cannot execute inside this Replit environment:
+
+DO NOT replace them with fake implementations.
+
+Clearly explain:
+
+- which scanner cannot execute
+- why
+- what dependency or runtime is missing
+- what is required to enable it
+
+Never fabricate results.
+
+=========================================================
+SUCCESS CRITERIA
+=========================================================
+
+The project will only be considered complete if:
+
+✔ No Math.random()
+
+✔ No placeholder screenshots
+
+✔ No fake scanner outputs
+
+✔ No generated scores
+
+✔ No template recommendations unrelated to findings
+
+✔ Same website produces stable results across multiple runs
+
+✔ Bugs originate from real scanner findings
+
+✔ Reports originate from real scanner findings
+
+✔ JSON Export contains only real collected data
+
+✔ Existing UI remains unchanged
+
+At the end provide:
+
+1. Every mock implementation removed.
+2. Every real integration completed.
+3. Any remaining environment limitations.
+4. Verification results from running the same website three times.

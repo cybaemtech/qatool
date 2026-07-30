@@ -53,6 +53,8 @@ async function buildAll() {
       "handlebars",
       "knex",
       "typeorm",
+      "lighthouse",
+      "chrome-launcher",
       "protobufjs",
       "onnxruntime-node",
       "@tensorflow/*",

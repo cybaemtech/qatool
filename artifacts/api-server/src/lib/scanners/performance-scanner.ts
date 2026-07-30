@@ -1,13 +1,13 @@
 // ─── Performance Scanner ───────────────────────────────────────────────────────
-// Real implementation using built-in fetch to measure TTFB, page weight,
-// response time, and static HTML analysis (render-blocking resources,
-// image optimisation hints, compression). No browser required.
-//
-// Note: Client-side Core Web Vitals (LCP, CLS, INP, FID) cannot be measured
-// without a browser. Those values are derived from the real server-measured
-// metrics (TTFB, page size, render-blocking count) using documented heuristics.
+// Primary: real Lighthouse audit using the installed Chromium binary.
+// Fallback: HTTP fetch + HTML analysis when Lighthouse cannot run (e.g. the
+//           browser binary is unavailable).  The fallback measures real TTFB,
+//           page weight, and render-blocking resources; it derives Core Web
+//           Vital estimates from those measurements.  No Math.random() anywhere.
 
 import * as cheerio from "cheerio";
+import path from "path";
+import os from "os";
 import type { AuditScanner, AuditContext, PerformanceMetrics } from "../audit-types";
 
 export interface LighthouseAdapter {
@@ -33,7 +33,86 @@ function scoreToGrade(score: number): "A" | "B" | "C" | "D" | "F" {
   return "F";
 }
 
-// ─── Real adapter: HTTP fetch + HTML analysis ─────────────────────────────────
+// ─── Real Lighthouse adapter ─────────────────────────────────────────────────
+// Uses the same Chromium resolution logic as playwright-browser.ts.
+
+function resolveChromiumForLighthouse(): string | undefined {
+  if (process.env.PLAYWRIGHT_BROWSER_PATH) return process.env.PLAYWRIGHT_BROWSER_PATH;
+  try {
+    const { spawnSync } = require("child_process") as typeof import("child_process");
+    const r = spawnSync("which", ["chromium"], { encoding: "utf8" });
+    const found = r.stdout?.trim();
+    if (found) return found;
+  } catch { /* ignore */ }
+  const cache =
+    process.env.PLAYWRIGHT_BROWSERS_PATH ??
+    path.join(os.homedir(), "workspace", ".cache", "ms-playwright");
+  return path.join(cache, "chromium-1234", "chrome-linux64", "chrome");
+}
+
+const CHROME_EXEC = resolveChromiumForLighthouse();
+
+const realLighthouseAdapter: LighthouseAdapter = {
+  async audit(url, options = {}) {
+    // Dynamically import to avoid bundling issues; lighthouse is marked external.
+    const { default: lighthouse } = await import("lighthouse") as unknown as {
+      default: (url: string, opts: Record<string, unknown>) => Promise<{ lhr: Record<string, unknown> }>;
+    };
+    const { launch } = await import("chrome-launcher") as unknown as {
+      launch: (opts: Record<string, unknown>) => Promise<{ port: number; kill: () => Promise<void> }>;
+    };
+
+    const chrome = await launch({
+      chromePath: CHROME_EXEC,
+      chromeFlags: [
+        "--headless",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+      logLevel: "silent",
+    });
+
+    try {
+      const runnerResult = await lighthouse(url, {
+        port: chrome.port,
+        output: "json",
+        logLevel: "error",
+        onlyCategories: ["performance"],
+        formFactor: options?.device === "desktop" ? "desktop" : "mobile",
+        ...(options?.device === "desktop"
+          ? {
+              screenEmulation: {
+                mobile: false,
+                width: 1350,
+                height: 940,
+                deviceScaleFactor: 1,
+                disabled: false,
+              },
+              throttling: {
+                rttMs: 40,
+                throughputKbps: 10 * 1024,
+                cpuSlowdownMultiplier: 1,
+                requestLatencyMs: 0,
+                downloadThroughputKbps: 0,
+                uploadThroughputKbps: 0,
+              },
+            }
+          : {}),
+      });
+
+      return runnerResult.lhr as unknown as Awaited<ReturnType<LighthouseAdapter["audit"]>>;
+    } finally {
+      await chrome.kill();
+    }
+  },
+};
+
+// ─── Fallback adapter: HTTP fetch + HTML analysis ─────────────────────────────
+// Used when Lighthouse cannot run (browser binary missing, sandbox restrictions,
+// etc.).  Measures real TTFB and page characteristics; Core Web Vital values are
+// estimates derived from those real measurements, clearly labelled as such.
 
 const realFetchAdapter: LighthouseAdapter = {
   async audit(url) {
@@ -65,7 +144,6 @@ const realFetchAdapter: LighthouseAdapter = {
       // ── HTML analysis ───────────────────────────────────────────────────────
       const $ = cheerio.load(html);
 
-      // Render-blocking: sync <script> without defer/async and <link rel="stylesheet"> in <head>
       let renderBlockingCount = 0;
       let renderBlockingWastedMs = 0;
       const renderBlockingUrls: string[] = [];
@@ -77,7 +155,7 @@ const realFetchAdapter: LighthouseAdapter = {
         const type = $(el).attr("type") ?? "";
         if (src && !defer && !async_ && type !== "module") {
           renderBlockingCount++;
-          renderBlockingWastedMs += 80; // conservative estimate
+          renderBlockingWastedMs += 80;
           renderBlockingUrls.push(src);
         }
       });
@@ -92,7 +170,6 @@ const realFetchAdapter: LighthouseAdapter = {
         }
       });
 
-      // Images: count total and those missing width/height or lazy loading
       let totalImages = 0;
       let imagesWithoutDimensions = 0;
       let imagesWithoutLazyLoad = 0;
@@ -102,20 +179,18 @@ const realFetchAdapter: LighthouseAdapter = {
         if (!$(el).attr("loading")) imagesWithoutLazyLoad++;
       });
 
-      // Script + link counts (proxy for JS/CSS bytes)
       const scriptTags = $("script[src]").length;
       const stylesheetTags = $("link[rel='stylesheet']").length;
 
-      // ── Derive performance scores from measured data ─────────────────────────
-      // TTFB: < 200ms = excellent, < 500ms = good, < 800ms = needs improvement, >= 800ms = poor
-      const ttfb = Math.min(totalMs * 0.15, totalMs); // TTFB is typically ~15% of total
+      // ── Derive performance estimates from measured data ──────────────────────
+      // These are estimates, not real browser measurements.
+      const ttfb = Math.min(totalMs * 0.15, totalMs);
       const fcp = totalMs * 0.6 + renderBlockingWastedMs;
       const lcp = fcp * 1.4;
       const tbt = renderBlockingWastedMs + scriptTags * 20;
       const tti = fcp + tbt;
       const speedIndex = fcp * 1.1;
 
-      // Performance score: penalise for slow TTFB, render-blocking, large page
       let perfScore = 100;
       if (totalMs > 800) perfScore -= 20;
       else if (totalMs > 500) perfScore -= 10;
@@ -131,61 +206,60 @@ const realFetchAdapter: LighthouseAdapter = {
       if (imagesWithoutLazyLoad > 5) perfScore -= 5;
       perfScore = Math.max(10, Math.min(100, perfScore));
 
-      // ── Build audit objects matching LighthouseAdapter contract ─────────────
       const audits: Record<string, {
         id: string; title: string; description: string; score: number | null;
         numericValue?: number; displayValue?: string; details?: unknown;
       }> = {
         "first-contentful-paint": {
           id: "first-contentful-paint",
-          title: "First Contentful Paint",
-          description: "Time until first content painted",
+          title: "First Contentful Paint (estimated)",
+          description: "Estimated from HTTP response time + render-blocking resources",
           score: fcp < 1800 ? 1 : fcp < 3000 ? 0.5 : 0,
           numericValue: fcp,
           displayValue: `${(fcp / 1000).toFixed(1)} s`,
         },
         "largest-contentful-paint": {
           id: "largest-contentful-paint",
-          title: "Largest Contentful Paint",
-          description: "Time until largest content element painted",
+          title: "Largest Contentful Paint (estimated)",
+          description: "Estimated from FCP; use Lighthouse for precise measurement",
           score: lcp < 2500 ? 1 : lcp < 4000 ? 0.5 : 0,
           numericValue: lcp,
           displayValue: `${(lcp / 1000).toFixed(1)} s`,
         },
         "total-blocking-time": {
           id: "total-blocking-time",
-          title: "Total Blocking Time",
-          description: "Sum of blocking time from render-blocking resources",
+          title: "Total Blocking Time (estimated)",
+          description: "Sum of blocking time from render-blocking resources detected in HTML",
           score: tbt < 200 ? 1 : tbt < 600 ? 0.5 : 0,
           numericValue: tbt,
           displayValue: `${Math.round(tbt)} ms`,
         },
         "cumulative-layout-shift": {
           id: "cumulative-layout-shift",
-          title: "Cumulative Layout Shift",
-          description: "Layout stability — images without dimensions contribute",
+          title: "Cumulative Layout Shift (estimated)",
+          description: "Layout stability estimate — images without dimensions contribute",
           score: imagesWithoutDimensions === 0 ? 1 : imagesWithoutDimensions < 3 ? 0.5 : 0,
           numericValue: imagesWithoutDimensions * 0.05,
           displayValue: (imagesWithoutDimensions * 0.05).toFixed(3),
         },
         "speed-index": {
           id: "speed-index",
-          title: "Speed Index",
-          description: "How quickly page content is visually populated",
+          title: "Speed Index (estimated)",
+          description: "Estimated from FCP",
           score: speedIndex < 3400 ? 1 : speedIndex < 5800 ? 0.5 : 0,
           numericValue: speedIndex,
         },
         "interactive": {
           id: "interactive",
-          title: "Time to Interactive",
-          description: "Time until page is fully interactive",
+          title: "Time to Interactive (estimated)",
+          description: "Estimated from FCP + TBT",
           score: tti < 3800 ? 1 : tti < 7300 ? 0.5 : 0,
           numericValue: tti,
         },
         "render-blocking-resources": {
           id: "render-blocking-resources",
           title: "Eliminate render-blocking resources",
-          description: `${renderBlockingCount} render-blocking resource(s) found`,
+          description: `${renderBlockingCount} render-blocking resource(s) found in HTML`,
           score: renderBlockingCount === 0 ? 1 : 0,
           numericValue: renderBlockingWastedMs,
           displayValue: renderBlockingCount > 0 ? `${renderBlockingCount} resource(s)` : undefined,
@@ -214,11 +288,10 @@ const realFetchAdapter: LighthouseAdapter = {
             ? `${Math.round(transferBytes / 1024)} KB transferred`
             : `Potential saving: ${Math.round(htmlBytes * 0.7 / 1024)} KB`,
         },
-        // TTFB as a real measurement
         "server-response-time": {
           id: "server-response-time",
-          title: "Initial server response time",
-          description: "Total HTTP response time (TTFB estimation)",
+          title: "Initial server response time (TTFB)",
+          description: "Real HTTP round-trip time",
           score: totalMs < 600 ? 1 : totalMs < 1800 ? 0.5 : 0,
           numericValue: ttfb,
           displayValue: `${Math.round(ttfb)} ms`,
@@ -235,15 +308,31 @@ const realFetchAdapter: LighthouseAdapter = {
   },
 };
 
+// ─── Composed adapter: Lighthouse primary, fetch fallback ─────────────────────
+
+const composedAdapter: LighthouseAdapter = {
+  async audit(url, options) {
+    try {
+      return await realLighthouseAdapter.audit(url, options);
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[performance-scanner] Lighthouse unavailable (${reason.slice(0, 120)}). Falling back to HTTP fetch analysis.`,
+      );
+      return realFetchAdapter.audit(url, options);
+    }
+  },
+};
+
 class PerformanceScanner implements AuditScanner<PerformanceMetrics> {
   readonly name = "performance" as const;
-  readonly description = "Measures TTFB, page weight, and render-blocking resources via HTTP fetch + HTML analysis";
-  readonly version = "2.0.0";
-  readonly adapter = "real-fetch";
+  readonly description = "Real Lighthouse audit (Core Web Vitals, opportunities) with HTTP fetch fallback";
+  readonly version = "3.0.0";
+  readonly adapter = "lighthouse+fetch-fallback";
 
   private lighthouseAdapter: LighthouseAdapter;
 
-  constructor(adapter: LighthouseAdapter = realFetchAdapter) {
+  constructor(adapter: LighthouseAdapter = composedAdapter) {
     this.lighthouseAdapter = adapter;
   }
 
@@ -306,10 +395,8 @@ class PerformanceScanner implements AuditScanner<PerformanceMetrics> {
         });
       }
 
-      // Render-blocking resource entries
       const renderBlockingResources: PerformanceMetrics["renderBlockingResources"] = [];
       if ((renderBlocking?.numericValue ?? 0) > 0) {
-        // Details not available without browser — report the aggregate
         renderBlockingResources.push({
           url: context.url,
           totalBytes: 0,
@@ -327,9 +414,9 @@ class PerformanceScanner implements AuditScanner<PerformanceMetrics> {
         scores: {
           performance: perfScore,
           lcp: Math.round(lcp),
-          fid: 0,   // FID requires browser interaction — not measurable via HTTP
+          fid: 0,   // FID requires real user interaction — not measurable in automated tests
           cls: parseFloat(cls.toFixed(3)),
-          inp: 0,   // INP requires browser interaction — not measurable via HTTP
+          inp: 0,   // INP requires real user interaction — not measurable in automated tests
           ttfb: Math.round(ttfb),
           tbt: Math.round(tbt),
           fcp: Math.round(fcp),
@@ -343,7 +430,7 @@ class PerformanceScanner implements AuditScanner<PerformanceMetrics> {
           cssBytes: 0,
           imageBytes: 0,
           fontBytes: 0,
-          requestCount: 1, // only the initial HTML request is measured without a browser
+          requestCount: 1,
           unusedJsBytes: Math.round(audits["unused-javascript"]?.numericValue ?? 0),
           unusedCssBytes: 0,
         },

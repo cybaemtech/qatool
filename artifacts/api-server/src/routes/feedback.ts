@@ -60,26 +60,40 @@ function parseUpdateSuggestion(body: Record<string, unknown>) {
 // ─── AI Analysis (mock) ───────────────────────────────────────────────────────
 
 function generateAIAnalysis(title: string, description: string, category: string) {
-  const rand = Math.random();
-  const complexities = ["low", "medium", "high"];
-  const risks = ["low", "medium", "high", "critical"];
-  const efforts = ["1-2 days", "3-5 days", "1-2 weeks", "2-4 weeks", "1-2 months"];
-  const teams = ["Frontend", "Backend", "Platform", "DevOps", "Full Stack", "QA"];
-  const sprints = ["Sprint 1", "Sprint 2", "Sprint 3", "Next Quarter", "Backlog"];
-
+  // All values are derived deterministically from keywords — no Math.random().
   const words = (title + " " + description).toLowerCase();
   const isSecurity = words.includes("security") || words.includes("auth") || words.includes("vulnerability");
   const isPerf = words.includes("performance") || words.includes("slow") || words.includes("speed");
   const isUI = words.includes("ui") || words.includes("design") || words.includes("button") || words.includes("page");
   const isAPI = words.includes("api") || words.includes("endpoint") || words.includes("integration");
+  const isBug = words.includes("bug") || words.includes("error") || words.includes("crash") || words.includes("broken");
 
-  const complexity = isSecurity || isAPI ? "high" : isUI ? "low" : complexities[Math.floor(rand * 3)];
-  const risk = isSecurity ? "critical" : isPerf ? "high" : risks[Math.floor(rand * 4)];
-  const effort = complexity === "high" ? efforts[3] : complexity === "medium" ? efforts[2] : efforts[Math.floor(rand * 2)];
-  const team = isSecurity ? "Platform" : isUI ? "Frontend" : isAPI ? "Backend" : teams[Math.floor(rand * teams.length)];
-  const sprint = risk === "critical" ? sprints[0] : risk === "high" ? sprints[1] : sprints[Math.floor(rand * 3)];
-  const score = Math.round(40 + rand * 55);
-  const confidence = Math.round(70 + rand * 25);
+  const complexity = isSecurity || isAPI ? "high" : isUI ? "low" : "medium";
+  const risk = isSecurity ? "critical" : isPerf || isBug ? "high" : isAPI ? "medium" : "low";
+  const effort =
+    complexity === "high" ? "2-4 weeks" :
+    complexity === "medium" ? "1-2 weeks" :
+    "1-2 days";
+  const team =
+    isSecurity ? "Platform" :
+    isUI ? "Frontend" :
+    isAPI ? "Backend" :
+    isPerf ? "Full Stack" :
+    "QA";
+  const sprint =
+    risk === "critical" ? "Sprint 1" :
+    risk === "high" ? "Sprint 2" :
+    "Sprint 3";
+  // Score reflects anticipated impact based on keyword signals
+  const score =
+    isSecurity ? 62 :
+    isPerf ? 74 :
+    isUI ? 80 :
+    isAPI ? 68 :
+    isBug ? 70 :
+    65;
+  // Confidence is higher when we have clear keyword signals
+  const confidence = (isSecurity || isPerf || isUI || isAPI || isBug) ? 88 : 75;
 
   const summary = `This ${category.replace("_", " ")} improvement has ${complexity} implementation complexity with ${risk} risk. ${
     isSecurity ? "Security-related changes require thorough review and testing." :

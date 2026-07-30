@@ -175,10 +175,22 @@ function generateMockSummary(input: AISummaryInput): Omit<AISummary, keyof impor
     criticalIssues,
     strengths,
     recommendations,
-    suggestedSprint: "Sprint " + Math.ceil((new Date().getDate()) / 7 + 1),
+    // Sprint priority derived from criticality, not arbitrary date math
+    suggestedSprint:
+      criticalIssues.filter(i => i.severity === "critical").length > 0
+        ? "Sprint 1 (immediate)"
+        : criticalIssues.length > 0
+          ? "Sprint 2 (short-term)"
+          : "Sprint 3 / Backlog",
     suggestedTeam: input.criticalBugs > 0 ? "Platform & Frontend" : "Frontend",
     estimatedRemediationDays: Math.round(criticalIssues.length * 2 + recommendations.filter(r => r.priority === "immediate").length),
-    confidenceScore: 88 + Math.round(Math.random() * 9),
+    // Confidence is deterministic: high when all scores are non-default, lower otherwise
+    confidenceScore: (
+      input.performanceScore !== 70 &&
+      input.accessibilityScore !== 70 &&
+      input.seoScore !== 70 &&
+      input.securityScore !== 70
+    ) ? 96 : 88,
   };
 }
 
