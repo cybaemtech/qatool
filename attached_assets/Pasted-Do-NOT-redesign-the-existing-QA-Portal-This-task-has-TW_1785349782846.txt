@@ -1,0 +1,238 @@
+Do NOT redesign the existing QA Portal.
+
+This task has TWO goals.
+
+====================================================
+PART 1 — FIX THE FEEDBACK DIALOG
+====================================================
+
+The Feedback & Ideas module currently has a UI bug.
+
+When clicking "New Suggestion":
+
+- the background overlay appears,
+- but the dialog is blank or hidden,
+- clicking outside briefly reveals the form.
+
+Please investigate and fix the issue.
+
+Requirements:
+
+- Ensure the dialog always renders above the overlay.
+- Verify proper z-index.
+- If using shadcn/ui Dialog, ensure it renders using the correct Portal.
+- Remove any parent overflow, transform, or positioning issues.
+- Center the modal correctly.
+- Lock background scrolling while open.
+- Support keyboard accessibility.
+- Escape closes the dialog.
+- Clicking outside closes only after the dialog is visible.
+- Verify responsive behaviour on desktop and mobile.
+
+Do not redesign the Feedback page.
+
+====================================================
+PART 2 — IMPLEMENT THE AUDIT EXECUTION ARCHITECTURE
+====================================================
+
+Do NOT create any new dashboard or analytics page.
+
+Instead, implement the backend architecture for the Website Audit Engine.
+
+The existing UI already contains:
+
+- Projects
+- Run Audit
+- Audit History
+- Audit Details
+- Bug Tracker
+- Reports
+- AI Copilot
+
+These must remain visually unchanged.
+
+The objective is to make the existing "Run Audit" workflow use a proper execution architecture instead of UI mock values.
+
+Create a modular Audit Execution Engine.
+
+Architecture:
+
+Audit Engine
+
+↓
+
+Performance Scanner
+
+Accessibility Scanner
+
+SEO Scanner
+
+Security Scanner
+
+Broken Link Scanner
+
+Console Error Collector
+
+Network Request Analyzer
+
+Screenshot Capture
+
+Technology Detector
+
+AI Summary Generator
+
+Each scanner must be an independent module.
+
+Each scanner returns structured JSON.
+
+The Audit Engine combines all scanner outputs into one Audit Result object.
+
+For now the scanners may internally return realistic mock data, but they must be isolated behind interfaces.
+
+Do NOT hardcode values directly inside React components anymore.
+
+Create reusable TypeScript models for:
+
+Audit
+
+AuditExecution
+
+AuditScanner
+
+AuditResult
+
+AuditFinding
+
+AuditIssue
+
+PerformanceMetrics
+
+AccessibilityMetrics
+
+SEOMetrics
+
+SecurityMetrics
+
+NetworkRequest
+
+ConsoleError
+
+Screenshot
+
+TechnologyProfile
+
+AISummary
+
+Create service layers:
+
+AuditExecutionService
+
+AuditStorageService
+
+AuditAnalysisService
+
+AuditReportingService
+
+ScannerRegistry
+
+AuditPipeline
+
+Create interfaces that will later support:
+
+- Lighthouse
+- Playwright
+- axe-core
+- OWASP scanners
+- Security Header analyzers
+- Broken Link Crawlers
+- Tech Stack Detection
+
+The Audit Engine should execute scanners sequentially through a pipeline.
+
+Example:
+
+Queued
+
+↓
+
+Preparing
+
+↓
+
+Running Performance Scanner
+
+↓
+
+Running Accessibility Scanner
+
+↓
+
+Running SEO Scanner
+
+↓
+
+Running Security Scanner
+
+↓
+
+Running Network Analysis
+
+↓
+
+Generating AI Summary
+
+↓
+
+Saving Audit
+
+↓
+
+Generating Report
+
+↓
+
+Completed
+
+Connect the existing Run Audit button to this execution flow.
+
+Update the existing progress timeline so it reflects the pipeline stages.
+
+Connect existing Audit History to the generated AuditResult model.
+
+Connect Audit Details to display data from AuditResult instead of UI constants.
+
+Populate:
+
+- Bug Tracker
+- Reports
+- AI Summary
+
+using the same AuditResult object.
+
+No duplicated data.
+
+Everything should reference one audit model.
+
+Prepare dependency injection so future real scanners can replace mock scanners with minimal changes.
+
+Maintain separation between:
+
+UI
+
+Business Logic
+
+Execution
+
+Storage
+
+Analysis
+
+Reporting
+
+Do not redesign existing screens.
+
+Do not change navigation.
+
+Focus on architecture, maintainability, and future extensibility.
+
+The result should make the QA Portal feel like a real enterprise audit platform with production-ready architecture, even if the scanner implementations remain mocked for now.

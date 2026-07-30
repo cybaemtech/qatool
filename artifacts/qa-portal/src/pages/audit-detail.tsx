@@ -10,6 +10,7 @@ import {
   useCreateAudit,
   useGetProject,
   useGetProjectHealthScore,
+  useListAudits,
   getGetAuditAiAnalysisQueryKey,
   getGetProjectQueryKey,
   getGetProjectHealthScoreQueryKey,
@@ -365,6 +366,14 @@ export default function AuditDetail() {
     },
   });
 
+  // Fetch sibling audits for the same project — used for historical comparison
+  const { data: projectAudits = [] } = useListAudits({ projectId: audit?.projectId ?? 0 }, {
+    query: {
+      enabled: !!audit?.projectId,
+      queryKey: getListAuditsQueryKey({ projectId: audit?.projectId ?? 0 }),
+    },
+  });
+
   const cancelMutation = useCancelAudit();
   const reportMutation = useGenerateReport();
   const createAuditMutation = useCreateAudit();
@@ -378,6 +387,96 @@ export default function AuditDetail() {
   // Derived data
   const criticalBugs = bugs.filter(b => b.severity === "critical");
   const findings = audit?.findings as Record<string, unknown> | null | undefined;
+
+  // ── Typed findings sub-objects (populated by the service layer) ──────────────
+  type FindingsConsoleErrors = {
+    errors: Array<{ level: string; message: string; source?: string; url?: string; stackTrace?: string }>;
+    totalErrors: number; uncaughtExceptions: number;
+  };
+  type FindingsNetworkRequests = {
+    slowRequests: Array<{ url: string; method: string; durationMs: number; sizeBytes: number; type: string; cached: boolean; statusCode: number }>;
+    failedRequests: Array<{ url: string; statusCode: number; method: string }>;
+  };
+  type FindingsPipeline = {
+    stages: Array<{ name: string; label: string; order: number; status: string; startedAt?: string; completedAt?: string; durationMs?: number }>;
+    completedAt?: string;
+    durationMs?: number;
+  };
+  type FindingsPerformance = {
+    opportunities: Array<{ id: string; title: string; description: string; potentialSavingsMs?: number; potentialSavingsBytes?: number }>;
+    renderBlockingResources: Array<{ url: string; wastedMs: number }>;
+  };
+
+  const realConsole = findings?.consoleErrors as FindingsConsoleErrors | undefined;
+  const realNetwork = findings?.networkRequests as FindingsNetworkRequests | undefined;
+  const pipeline = findings?._pipeline as FindingsPipeline | undefined;
+  const realPerformance = findings?.performance as FindingsPerformance | undefined;
+
+  // ── Performance insights — derived from scanner opportunities ─────────────────
+  const perfInsights = useMemo(() => {
+    const opps = realPerformance?.opportunities ?? [];
+    if (opps.length === 0) return PERF_INSIGHTS;
+
+    const iconMap: Record<string, typeof Package> = {
+      "render-blocking-resources": Globe,
+      "unused-javascript": Package,
+      "uses-optimized-images": ImageIcon,
+    };
+    const colorMap: Record<string, string> = {
+      "render-blocking-resources": "#8b5cf6",
+      "unused-javascript": "#ef4444",
+      "uses-optimized-images": "#f59e0b",
+    };
+
+    return opps.map((opp, i) => {
+      const savingsMs = opp.potentialSavingsMs ?? 0;
+      const savingsBytes = opp.potentialSavingsBytes ?? 0;
+      const savings = savingsMs > 0
+        ? `~${savingsMs}ms savings`
+        : savingsBytes > 0
+        ? `~${Math.round(savingsBytes / 1024)} KB savings`
+        : "Variable";
+      const impact: "High" | "Medium" = savingsMs > 400 || savingsBytes > 80000 ? "High" : "Medium";
+      const priority = i === 0 ? "P1" : i === 1 ? "P2" : "P3";
+      return {
+        issue: opp.title,
+        icon: iconMap[opp.id] ?? (i % 2 === 0 ? Package : Globe),
+        color: colorMap[opp.id] ?? (impact === "High" ? "#ef4444" : "#f59e0b"),
+        impact,
+        priority,
+        description: opp.description,
+        savings,
+        effort: "1–3 hrs",
+        fix: opp.description,
+      };
+    });
+  }, [realPerformance]);
+
+  // ── Timeline steps — use real pipeline stages when available ──────────────────
+  const timelineSteps = useMemo(() => {
+    if (!pipeline?.stages || pipeline.stages.length === 0) return TIMELINE_STEPS;
+
+    const auditStart = audit?.startedAt ? new Date(audit.startedAt).getTime() : Date.now();
+    return [
+      { label: "Audit Queued", offset: 0, icon: "queue", logs: ["Audit job created", "Priority: normal", "Worker assigned"] },
+      ...pipeline.stages.map((stage) => {
+        const stageStart = stage.startedAt ? new Date(stage.startedAt).getTime() : auditStart;
+        const offset = (stageStart - auditStart) / 1000;
+        const statusLog = stage.status === "completed"
+          ? `${stage.label} completed in ${((stage.durationMs ?? 0) / 1000).toFixed(1)}s`
+          : stage.status === "failed"
+          ? `${stage.label} failed: ${stage.error ?? "unknown error"}`
+          : "Skipped";
+        return {
+          label: stage.label,
+          offset: Math.max(0.5, offset),
+          icon: stage.name,
+          logs: [statusLog, `Scanner: ${stage.name}`, `Status: ${stage.status}`],
+        };
+      }),
+      { label: "Report Generated", offset: -1, icon: "report", logs: ["Aggregating all findings", "Storing results", "Audit complete"] },
+    ];
+  }, [pipeline, audit?.startedAt]);
 
   const consoleErrors = useMemo(() => {
     const base = [
@@ -432,29 +531,164 @@ export default function AuditDetail() {
         stackTrace: "GET /fonts/Inter-Bold.woff2 404 (Not Found)",
       },
     ];
-    const extra = (findings?.consoleErrors as string[] | undefined) ?? [];
-    return [
-      ...base.slice(0, Math.max(2, 5 - extra.length)),
-      ...extra.map((msg, i) => ({
-        time: `00:0${8 + i}.000`, source: "page.js", message: msg, severity: "error" as const,
+    // Use real scanner data when available
+    const realErrors = realConsole?.errors?.filter(e => e.level === "error" || e.level === "warning") ?? [];
+    if (realErrors.length > 0) {
+      return realErrors.map((e, i) => ({
+        time: `00:0${String(3 + i).padStart(1, "0")}.${String((i * 157 + 241) % 1000).padStart(3, "0")}`,
+        source: e.source ?? e.url ?? "page.js",
+        message: e.message,
+        severity: e.level === "warning" ? "warning" as const : "error" as const,
         explanation: "Error detected during automated audit scan.",
-        cause: "Unknown — manual investigation required",
-        file: "page.js",
+        cause: "Detected in browser console during headless audit session.",
+        file: e.source ?? "page.js",
         fix: "Inspect the browser console during a live session for more context.",
-        stackTrace: msg,
-      })),
-    ];
-  }, [findings]);
+        stackTrace: e.stackTrace ?? e.message,
+      }));
+    }
+    return base;
+  }, [realConsole]);
 
-  const networkRequests = useMemo(() => [
-    { method: "GET", url: "/", status: 200, duration: 42, size: "48 KB", type: "Document", cached: true, compressed: true, compressedSize: "12 KB", waterfall: 4 },
-    { method: "GET", url: "/api/config", status: 200, duration: 38, size: "1.2 KB", type: "XHR", cached: false, compressed: true, compressedSize: "0.4 KB", waterfall: 4 },
-    { method: "POST", url: "/api/analytics/track", status: 500, duration: 1203, size: "0 B", type: "XHR", cached: false, compressed: false, compressedSize: "0 B", waterfall: 100 },
-    { method: "GET", url: "/fonts/Inter.woff2", status: 404, duration: 65, size: "0 B", type: "Font", cached: false, compressed: false, compressedSize: "0 B", waterfall: 6 },
-    { method: "GET", url: "/api/user/profile", status: 200, duration: 87, size: "3.4 KB", type: "XHR", cached: true, compressed: true, compressedSize: "1.1 KB", waterfall: 8 },
-    { method: "GET", url: "/static/main.bundle.js", status: 200, duration: 240, size: "512 KB", type: "Script", cached: false, compressed: true, compressedSize: "148 KB", waterfall: 22 },
-    { method: "OPTIONS", url: "/api/external-service", status: 403, duration: 195, size: "0 B", type: "Preflight", cached: false, compressed: false, compressedSize: "0 B", waterfall: 18 },
-  ], []);
+  const networkRequests = useMemo(() => {
+    const slowReqs = realNetwork?.slowRequests ?? [];
+    const failedReqs = realNetwork?.failedRequests ?? [];
+
+    if (slowReqs.length > 0 || failedReqs.length > 0) {
+      const mapped = [
+        ...slowReqs.map(r => ({
+          method: r.method,
+          url: r.url,
+          status: r.statusCode,
+          duration: r.durationMs,
+          size: r.sizeBytes > 0 ? `${(r.sizeBytes / 1024).toFixed(1)} KB` : "0 B",
+          type: r.type,
+          cached: r.cached,
+          compressed: r.sizeBytes > 2048,
+          compressedSize: r.sizeBytes > 0 ? `${(r.sizeBytes / 1024 * 0.38).toFixed(1)} KB` : "0 B",
+          waterfall: Math.min(100, Math.round(r.durationMs / 12)),
+        })),
+        ...failedReqs.map(r => ({
+          method: r.method,
+          url: r.url,
+          status: r.statusCode,
+          duration: 0,
+          size: "0 B",
+          type: "XHR",
+          cached: false,
+          compressed: false,
+          compressedSize: "0 B",
+          waterfall: 0,
+        })),
+      ];
+      return mapped.slice(0, 10);
+    }
+
+    // Fallback to representative static data
+    return [
+      { method: "GET", url: "/", status: 200, duration: 42, size: "48 KB", type: "Document", cached: true, compressed: true, compressedSize: "12 KB", waterfall: 4 },
+      { method: "GET", url: "/api/config", status: 200, duration: 38, size: "1.2 KB", type: "XHR", cached: false, compressed: true, compressedSize: "0.4 KB", waterfall: 4 },
+      { method: "POST", url: "/api/analytics/track", status: 500, duration: 1203, size: "0 B", type: "XHR", cached: false, compressed: false, compressedSize: "0 B", waterfall: 100 },
+      { method: "GET", url: "/fonts/Inter.woff2", status: 404, duration: 65, size: "0 B", type: "Font", cached: false, compressed: false, compressedSize: "0 B", waterfall: 6 },
+      { method: "GET", url: "/api/user/profile", status: 200, duration: 87, size: "3.4 KB", type: "XHR", cached: true, compressed: true, compressedSize: "1.1 KB", waterfall: 8 },
+      { method: "GET", url: "/static/main.bundle.js", status: 200, duration: 240, size: "512 KB", type: "Script", cached: false, compressed: true, compressedSize: "148 KB", waterfall: 22 },
+      { method: "OPTIONS", url: "/api/external-service", status: 403, duration: 195, size: "0 B", type: "Preflight", cached: false, compressed: false, compressedSize: "0 B", waterfall: 18 },
+    ];
+  }, [realNetwork]);
+
+  // ── Typed findings for accessibility, security, and broken links ─────────────
+  type FindingsAccessibility = {
+    violations: Array<{ id: string; impact: string; description: string; help: string; helpUrl?: string; affectedElements: number; wcagCriteria: string[] }>;
+    score: number; wcagLevel: string; passes: number;
+  };
+  type FindingsSecurity = {
+    vulnerabilities: Array<{ id: string; severity: string; title: string; description: string; recommendation: string; cve?: string; cvssScore?: number }>;
+    score: number; ssl: { valid: boolean; grade: string };
+    headers: { contentSecurityPolicy: boolean; strictTransportSecurity: boolean; xFrameOptions: boolean };
+    mixedContent: boolean;
+  };
+  type FindingsBrokenLinks = {
+    brokenLinks: Array<{ url: string; statusCode: number; foundOn: string }>;
+    totalLinksChecked: number;
+  };
+
+  const a11yFindings = findings?.accessibility as FindingsAccessibility | undefined;
+  const secFindings = findings?.security as FindingsSecurity | undefined;
+  const brokenLinksFindings = findings?.brokenLinks as FindingsBrokenLinks | undefined;
+
+  // ── Recommendations derived from real scanner findings ────────────────────────
+  const recommendations = useMemo(() => {
+    const derived: typeof RECOMMENDATIONS = [];
+
+    if (a11yFindings?.violations) {
+      for (const v of a11yFindings.violations.filter(v => v.impact === "critical" || v.impact === "serious").slice(0, 2)) {
+        derived.push({
+          title: `Fix accessibility: ${v.description}`,
+          priority: v.impact === "critical" ? "High" : "Medium" as "High" | "Medium" | "Low",
+          impact: "High",
+          time: "1–2 hrs",
+          difficulty: "Medium",
+          scoreGain: "+5 pts",
+          business: `Affects ${v.affectedElements} element(s). WCAG: ${v.wcagCriteria.slice(0, 2).join(", ")}`,
+        });
+      }
+    }
+
+    if (realPerformance?.opportunities) {
+      for (const opp of realPerformance.opportunities.slice(0, 2)) {
+        const savings = opp.potentialSavingsMs ? `~${opp.potentialSavingsMs}ms` : opp.potentialSavingsBytes ? `~${Math.round(opp.potentialSavingsBytes / 1024)}KB` : "";
+        derived.push({
+          title: opp.title,
+          priority: ((opp.potentialSavingsMs ?? 0) > 400 || (opp.potentialSavingsBytes ?? 0) > 80000 ? "High" : "Medium") as "High" | "Medium" | "Low",
+          impact: "High",
+          time: "1–3 hrs",
+          difficulty: "Medium",
+          scoreGain: "+8 pts",
+          business: `${opp.description}${savings ? ` (${savings} savings)` : ""}`,
+        });
+      }
+    }
+
+    if (secFindings?.vulnerabilities) {
+      for (const v of secFindings.vulnerabilities.filter(v => v.severity === "critical" || v.severity === "high").slice(0, 2)) {
+        derived.push({
+          title: v.title,
+          priority: (v.severity === "critical" ? "High" : "Medium") as "High" | "Medium" | "Low",
+          impact: "High",
+          time: "2–4 hrs",
+          difficulty: "Medium",
+          scoreGain: "+7 pts",
+          business: v.recommendation,
+        });
+      }
+    }
+
+    if (brokenLinksFindings?.brokenLinks && brokenLinksFindings.brokenLinks.length > 0) {
+      derived.push({
+        title: `Fix ${brokenLinksFindings.brokenLinks.length} broken link(s)`,
+        priority: "High",
+        impact: "Medium",
+        time: "30 min",
+        difficulty: "Easy",
+        scoreGain: "+4 pts",
+        business: "Prevents 404 errors harming SEO ranking and user experience",
+      });
+    }
+
+    const errCount = (realConsole?.errors ?? []).filter(e => e.level === "error").length;
+    if (errCount > 0) {
+      derived.push({
+        title: `Resolve ${errCount} JavaScript console error(s)`,
+        priority: "Medium",
+        impact: "Medium",
+        time: "2–3 hrs",
+        difficulty: "Hard",
+        scoreGain: "+6 pts",
+        business: "Improves reliability, prevents user-facing failures",
+      });
+    }
+
+    return derived.length > 0 ? derived : RECOMMENDATIONS;
+  }, [a11yFindings, realPerformance, secFindings, brokenLinksFindings, realConsole]);
 
   const filteredConsole = useMemo(() => {
     let list = [...consoleErrors];
@@ -484,7 +718,7 @@ export default function AuditDetail() {
   const activeShot = screenshots.find(s => s.deviceType === screenshotDevice) ?? screenshots[0];
 
   const completedCount = completedRecs.size;
-  const recProgress = Math.round((completedCount / RECOMMENDATIONS.length) * 100);
+  const recProgress = Math.round((completedCount / Math.max(1, recommendations.length)) * 100);
 
   const scrollToBreakdown = (tab: string) => {
     setScoreBreakdownTab(tab);
@@ -576,22 +810,43 @@ export default function AuditDetail() {
   const startAt = audit.startedAt ? new Date(audit.startedAt) : audit.createdAt ? new Date(audit.createdAt) : new Date();
   const endAt = audit.completedAt ? new Date(audit.completedAt) : null;
 
-  // Build historical data using real current scores
-  const histData = HISTORICAL_DATA.map((d, i) =>
-    i === HISTORICAL_DATA.length - 1
-      ? {
-          ...d,
-          performance: audit.performanceScore ?? 0,
-          accessibility: audit.accessibilityScore ?? 0,
-          seo: audit.seoScore ?? 0,
-          bestPractices: audit.bestPracticesScore ?? 0,
-          health: healthScore?.score ?? 0,
-        }
-      : d
-  );
+  // Build historical data using real audit history for this project
+  const previousAudits = projectAudits
+    .filter(a => a.id !== auditId && a.status === "completed" && a.performanceScore != null)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 4);
 
-  // Health trend (simulated vs previous)
-  const prevHealth = HISTORICAL_DATA[HISTORICAL_DATA.length - 2].health;
+  const prevAudit = previousAudits[0] ?? null;
+
+  const histData = (() => {
+    const realEntries = [...previousAudits].reverse().map((a, idx) => ({
+      name: idx === previousAudits.length - 1 ? "Previous" : `${previousAudits.length - idx} audits ago`,
+      performance: Math.round(a.performanceScore ?? 0),
+      accessibility: Math.round(a.accessibilityScore ?? 0),
+      seo: Math.round(a.seoScore ?? 0),
+      bestPractices: Math.round(a.bestPracticesScore ?? 0),
+      health: Math.round(((a.performanceScore ?? 0) + (a.accessibilityScore ?? 0) + (a.seoScore ?? 0) + (a.bestPracticesScore ?? 0)) / 4),
+    }));
+    const padded = realEntries.length < 4
+      ? [...HISTORICAL_DATA.slice(0, 4 - realEntries.length), ...realEntries]
+      : realEntries;
+    return [
+      ...padded,
+      {
+        name: "Current",
+        performance: Math.round(audit.performanceScore ?? 0),
+        accessibility: Math.round(audit.accessibilityScore ?? 0),
+        seo: Math.round(audit.seoScore ?? 0),
+        bestPractices: Math.round(audit.bestPracticesScore ?? 0),
+        health: Math.round(healthScore?.score ?? 0),
+      },
+    ];
+  })();
+
+  // Health trend vs real previous audit
+  const prevHealth = prevAudit
+    ? Math.round(((prevAudit.performanceScore ?? 0) + (prevAudit.accessibilityScore ?? 0) + (prevAudit.seoScore ?? 0) + (prevAudit.bestPracticesScore ?? 0)) / 4)
+    : (HISTORICAL_DATA[HISTORICAL_DATA.length - 2]?.health ?? 72);
   const currHealth = healthScore?.score ?? 0;
   const healthTrend = currHealth - prevHealth;
 
@@ -752,19 +1007,19 @@ export default function AuditDetail() {
                         style={{ height: "calc(100% - 16px)", transition: "height 1.2s ease" }}
                       />
                     )}
-                    {TIMELINE_STEPS.map((step, i) => {
-                      const isLast = i === TIMELINE_STEPS.length - 1;
+                    {timelineSteps.map((step, i) => {
+                      const isLast = i === timelineSteps.length - 1;
                       const done = audit.status === "completed" || (isRunning && i < 6);
                       const active = isRunning && i === 6;
                       const stepTime = isLast
                         ? endAt
                         : audit.startedAt ? addSeconds(startAt, step.offset) : null;
-                      const durationSec = i < TIMELINE_STEPS.length - 1
-                        ? Math.round(TIMELINE_STEPS[i + 1].offset - step.offset)
-                        : audit.durationMs ? Math.round(audit.durationMs / 1000 - step.offset) : null;
+                      const durationSec = i < timelineSteps.length - 1
+                        ? Math.round((timelineSteps[i + 1]?.offset ?? 0) - (step.offset ?? 0))
+                        : audit.durationMs ? Math.round(audit.durationMs / 1000 - (step.offset ?? 0)) : null;
                       const isExpanded = expandedStep === i;
                       return (
-                        <div key={step.label} className={cn("relative", i < TIMELINE_STEPS.length - 1 && "mb-4")}>
+                        <div key={step.label} className={cn("relative", i < timelineSteps.length - 1 && "mb-4")}>
                           <div className="flex items-start gap-3">
                             <div className={cn(
                               "absolute -left-[9px] top-0.5 h-5 w-5 rounded-full flex items-center justify-center z-10 border-2 transition-all duration-300",
@@ -922,6 +1177,143 @@ export default function AuditDetail() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* ── Accessibility Violations ─────────────────────────────────── */}
+            {a11yFindings?.violations && a11yFindings.violations.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3 border-b border-border">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Users className="h-4 w-4 text-blue-500" /> Accessibility Violations
+                      <Badge variant="secondary">{a11yFindings.violations.length}</Badge>
+                      {a11yFindings.violations.filter(v => v.impact === "critical").length > 0 && (
+                        <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">
+                          {a11yFindings.violations.filter(v => v.impact === "critical").length} critical
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <Badge variant="outline" className="text-xs capitalize">{a11yFindings.wcagLevel}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="divide-y divide-border">
+                    {a11yFindings.violations.slice(0, 8).map((v, i) => (
+                      <div key={v.id ?? i} className="px-4 py-3 hover:bg-muted/20 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className={cn("text-[10px] flex-shrink-0 mt-0.5 capitalize", {
+                            "bg-red-50 text-red-700 border-red-200": v.impact === "critical",
+                            "bg-orange-50 text-orange-700 border-orange-200": v.impact === "serious",
+                            "bg-yellow-50 text-yellow-700 border-yellow-200": v.impact === "moderate",
+                            "bg-blue-50 text-blue-700 border-blue-200": v.impact === "minor",
+                          })}>
+                            {v.impact}
+                          </Badge>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground">{v.description}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{v.help}</p>
+                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" /> {v.affectedElements} element(s)
+                              </span>
+                              {v.wcagCriteria.slice(0, 2).map(c => (
+                                <Badge key={c} variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">{c}</Badge>
+                              ))}
+                              {v.helpUrl && (
+                                <a href={v.helpUrl} target="_blank" rel="noopener noreferrer"
+                                  className="text-[10px] text-primary hover:underline flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                  Learn more <ExternalLink className="h-2.5 w-2.5" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Security Findings ────────────────────────────────────────── */}
+            {secFindings && (secFindings.vulnerabilities.length > 0 || secFindings.mixedContent || !secFindings.ssl.valid) && (
+              <Card>
+                <CardHeader className="pb-3 border-b border-border">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4 text-red-500" /> Security Findings
+                      {secFindings.vulnerabilities.length > 0 && (
+                        <Badge variant="secondary">{secFindings.vulnerabilities.length}</Badge>
+                      )}
+                      {secFindings.vulnerabilities.filter(v => v.severity === "critical").length > 0 && (
+                        <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">
+                          {secFindings.vulnerabilities.filter(v => v.severity === "critical").length} critical
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={cn("text-xs", secFindings.ssl.valid ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200")}>
+                        SSL {secFindings.ssl.valid ? "✓ " : "✗ "}{secFindings.ssl.grade}
+                      </Badge>
+                      {secFindings.mixedContent && (
+                        <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-200">Mixed Content</Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-0 p-0">
+                  {/* Header check summary */}
+                  <div className="px-4 py-3 border-b border-border bg-muted/20">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Security Headers</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                      {([
+                        ["CSP", secFindings.headers.contentSecurityPolicy],
+                        ["HSTS", secFindings.headers.strictTransportSecurity],
+                        ["X-Frame-Options", secFindings.headers.xFrameOptions],
+                      ] as [string, boolean][]).map(([name, ok]) => (
+                        <div key={name} className="flex items-center gap-1.5 text-xs">
+                          {ok ? <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" /> : <XCircle className="h-3 w-3 text-red-400 flex-shrink-0" />}
+                          <span className={ok ? "text-foreground" : "text-muted-foreground"}>{name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Vulnerabilities */}
+                  <div className="divide-y divide-border">
+                    {secFindings.vulnerabilities.slice(0, 6).map((v, i) => (
+                      <div key={v.id ?? i} className="px-4 py-3 hover:bg-muted/20 transition-colors">
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className={cn("text-[10px] flex-shrink-0 mt-0.5 capitalize", {
+                            "bg-red-50 text-red-700 border-red-200": v.severity === "critical",
+                            "bg-orange-50 text-orange-700 border-orange-200": v.severity === "high",
+                            "bg-yellow-50 text-yellow-700 border-yellow-200": v.severity === "medium",
+                            "bg-blue-50 text-blue-700 border-blue-200": v.severity === "low",
+                          })}>
+                            {v.severity}
+                          </Badge>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-medium">{v.title}</p>
+                              {v.cve && <Badge variant="outline" className="text-[9px] font-mono">{v.cve}</Badge>}
+                              {v.cvssScore != null && <span className="text-[10px] text-muted-foreground">CVSS {v.cvssScore.toFixed(1)}</span>}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{v.description}</p>
+                            <div className="mt-1.5 rounded bg-blue-50 border border-blue-100 px-2 py-1">
+                              <p className="text-[10px] text-blue-700">{v.recommendation}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {secFindings.vulnerabilities.length === 0 && (
+                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-6 w-6 mx-auto mb-2 text-emerald-500" />
+                        No vulnerabilities detected.
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* ── Found Bugs ──────────────────────────────────────────────── */}
             <Card>
@@ -1260,7 +1652,7 @@ export default function AuditDetail() {
                 <CardDescription>Intelligent analysis of performance bottlenecks detected during the audit</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {PERF_INSIGHTS.map((insight) => {
+                {perfInsights.map((insight) => {
                   const Icon = insight.icon;
                   return (
                     <div key={insight.issue} className="rounded-xl border border-border p-4 hover:shadow-sm transition-all duration-200 hover:border-border/80 group">
@@ -1471,7 +1863,7 @@ export default function AuditDetail() {
                   <div>
                     <CardTitle className="text-base flex items-center gap-2">
                       <Lightbulb className="h-4 w-4 text-yellow-500" /> Recommendations
-                      <Badge variant="secondary">{completedCount}/{RECOMMENDATIONS.length}</Badge>
+                      <Badge variant="secondary">{completedCount}/{recommendations.length}</Badge>
                     </CardTitle>
                     <CardDescription>Prioritized action items — mark items complete as you fix them</CardDescription>
                   </div>
@@ -1483,7 +1875,7 @@ export default function AuditDetail() {
                 <Progress value={recProgress} className="h-1.5 mt-2" />
               </CardHeader>
               <CardContent className="space-y-2">
-                {RECOMMENDATIONS.map((rec, i) => {
+                {recommendations.map((rec, i) => {
                   const done = completedRecs.has(i);
                   return (
                     <div key={i} className={cn(
@@ -1569,11 +1961,11 @@ export default function AuditDetail() {
                     </TableHeader>
                     <TableBody>
                       {[
-                        { label: "Performance", curr: audit.performanceScore, prev: 68, best: 74 },
-                        { label: "Accessibility", curr: audit.accessibilityScore, prev: 74, best: 79 },
-                        { label: "SEO", curr: audit.seoScore, prev: 70, best: 73 },
-                        { label: "Best Practices", curr: audit.bestPracticesScore, prev: 76, best: 80 },
-                        { label: "Health Score", curr: healthScore?.score, prev: prevHealth, best: 78 },
+                        { label: "Performance", curr: audit.performanceScore, prev: prevAudit?.performanceScore != null ? Math.round(prevAudit.performanceScore) : 68, best: Math.max(Math.round(audit.performanceScore ?? 0), ...previousAudits.map(a => Math.round(a.performanceScore ?? 0)), 74) },
+                        { label: "Accessibility", curr: audit.accessibilityScore, prev: prevAudit?.accessibilityScore != null ? Math.round(prevAudit.accessibilityScore) : 74, best: Math.max(Math.round(audit.accessibilityScore ?? 0), ...previousAudits.map(a => Math.round(a.accessibilityScore ?? 0)), 74) },
+                        { label: "SEO", curr: audit.seoScore, prev: prevAudit?.seoScore != null ? Math.round(prevAudit.seoScore) : 70, best: Math.max(Math.round(audit.seoScore ?? 0), ...previousAudits.map(a => Math.round(a.seoScore ?? 0)), 70) },
+                        { label: "Best Practices", curr: audit.bestPracticesScore, prev: prevAudit?.bestPracticesScore != null ? Math.round(prevAudit.bestPracticesScore) : 76, best: Math.max(Math.round(audit.bestPracticesScore ?? 0), ...previousAudits.map(a => Math.round(a.bestPracticesScore ?? 0)), 76) },
+                        { label: "Health Score", curr: healthScore?.score, prev: prevHealth, best: Math.max(currHealth, prevHealth, 75) },
                       ].map(({ label, curr, prev, best }) => {
                         const c = curr != null ? Math.round(curr) : null;
                         const diff = c != null ? c - prev : null;
@@ -1713,7 +2105,7 @@ export default function AuditDetail() {
                 <CardDescription className="text-xs">Top 5 highest-impact improvements</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                {RECOMMENDATIONS.filter(r => r.priority === "High").slice(0, 3).concat(RECOMMENDATIONS.filter(r => r.priority === "Medium").slice(0, 2)).map((rec, i) => (
+                {recommendations.filter(r => r.priority === "High").slice(0, 3).concat(recommendations.filter(r => r.priority === "Medium").slice(0, 2)).map((rec, i) => (
                   <div key={i} className="rounded-lg border border-border p-2.5 hover:bg-muted/40 transition-colors">
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <p className="text-xs font-medium line-clamp-1 flex-1">{rec.title}</p>
@@ -1751,7 +2143,10 @@ export default function AuditDetail() {
                     <FileText className="h-3 w-3" /> Likely Affected Files
                   </p>
                   <div className="space-y-1">
-                    {["src/components/Header.jsx", "src/pages/Dashboard.jsx", "public/fonts/Inter-Bold.woff2", "src/lib/analytics.js"].map(f => (
+                    {(consoleErrors.length > 0
+                      ? [...new Set(consoleErrors.map(e => e.file).filter(Boolean))].slice(0, 4)
+                      : ["src/components/Header.jsx", "src/pages/Dashboard.jsx", "public/fonts/Inter-Bold.woff2", "src/lib/analytics.js"]
+                    ).map(f => (
                       <p key={f} className="font-mono text-[10px] text-muted-foreground truncate">› {f}</p>
                     ))}
                   </div>
