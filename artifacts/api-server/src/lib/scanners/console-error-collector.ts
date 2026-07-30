@@ -1,129 +1,123 @@
 // ─── Console Error Collector ──────────────────────────────────────────────────
-// Mock implementation. Replace with Playwright CDP / Puppeteer page.on('console').
-// Interface: AuditScanner<ConsoleErrors>
+// Real implementation using Playwright to capture browser console messages,
+// uncaught JS exceptions, and failed network requests during page load.
 
 import type { AuditScanner, AuditContext, ConsoleErrors } from "../audit-types";
+import { withPage } from "./playwright-browser";
 
 export interface BrowserConsoleAdapter {
-  collect(url: string, options?: { waitMs?: number }): Promise<{
-    consoleMessages: Array<{
+  collect(url: string, options?: { timeout?: number }): Promise<{
+    logs: Array<{
       level: "error" | "warning" | "info" | "verbose";
       message: string;
       source?: string;
       lineNumber?: number;
-      stackTrace?: string;
     }>;
-    networkFailures: Array<{
+    uncaughtExceptions: number;
+    failedRequests: Array<{
       url: string;
       method: string;
       statusCode: number;
       errorMessage?: string;
     }>;
-    uncaughtExceptions: number;
   }>;
 }
 
-const mockBrowserConsoleAdapter: BrowserConsoleAdapter = {
-  async collect(url) {
-    const rand = Math.random();
+// ─── Real adapter: Playwright CDP console monitoring ─────────────────────────
 
-    const messages: ConsoleErrors["errors"] = [];
-    const failedRequests: ConsoleErrors["failedRequests"] = [];
-    let uncaught = 0;
+const realConsoleAdapter: BrowserConsoleAdapter = {
+  async collect(url, options = {}) {
+    return withPage(async (page) => {
+      const logs: Array<{
+        level: "error" | "warning" | "info" | "verbose";
+        message: string;
+        source?: string;
+        lineNumber?: number;
+      }> = [];
+      let uncaughtExceptions = 0;
+      const failedRequests: Array<{ url: string; method: string; statusCode: number; errorMessage?: string }> = [];
 
-    if (rand > 0.6) {
-      messages.push({
-        level: "error",
-        message: "Uncaught TypeError: Cannot read properties of undefined (reading 'data')",
-        source: `${url}/assets/app.js`,
-        lineNumber: 1847,
-        columnNumber: 23,
-        stackTrace: `TypeError: Cannot read properties of undefined\n  at Object.render (app.js:1847:23)\n  at HTMLButtonElement.onclick`,
-      });
-      uncaught++;
-    }
+      // ── Capture console messages ─────────────────────────────────────────
+      page.on("console", (msg) => {
+        const type = msg.type();
+        // Map Playwright console types to ConsoleErrors levels
+        const level: "error" | "warning" | "info" | "verbose" =
+          type === "error"   ? "error"   :
+          type === "warning" ? "warning" :
+          type === "info"    ? "info"    :
+          "verbose";
 
-    if (rand > 0.5) {
-      messages.push({
-        level: "warning",
-        message: "WARN: Failed to load resource: the server responded with a status of 403 (Forbidden)",
-        source: `${url}/api/v1/features`,
-        lineNumber: undefined,
+        logs.push({
+          level,
+          message: msg.text(),
+          source: msg.location().url || undefined,
+          lineNumber: msg.location().lineNumber || undefined,
+        });
       });
-      failedRequests.push({
-        url: `${url}/api/v1/features`,
-        method: "GET",
-        statusCode: 403,
-        errorMessage: "Forbidden",
-      });
-    }
 
-    if (rand > 0.3) {
-      messages.push({
-        level: "warning",
-        message: "React: Each child in a list should have a unique 'key' prop",
-        source: `${url}/assets/vendor.js`,
-        lineNumber: 42,
+      // ── Capture uncaught JS exceptions ───────────────────────────────────
+      page.on("pageerror", () => {
+        uncaughtExceptions++;
       });
-    }
 
-    if (rand > 0.8) {
-      messages.push({
-        level: "error",
-        message: "SyntaxError: Unexpected token '<' — API returned HTML instead of JSON",
-        source: `${url}/api/v2/data`,
-        lineNumber: 1,
-        columnNumber: 1,
+      // ── Capture failed network requests ──────────────────────────────────
+      page.on("requestfailed", (req) => {
+        failedRequests.push({
+          url: req.url(),
+          method: req.method(),
+          statusCode: 0,
+          errorMessage: req.failure()?.errorText ?? "Request failed",
+        });
       });
-      failedRequests.push({
-        url: `${url}/api/v2/data`,
-        method: "POST",
-        statusCode: 500,
-        errorMessage: "Internal Server Error",
-      });
-    }
 
-    if (rand > 0.4) {
-      messages.push({
-        level: "info",
-        message: "[webpack-dev-server] Server started: Hot Module Replacement enabled",
+      page.on("response", (res) => {
+        if (res.status() >= 400) {
+          failedRequests.push({
+            url: res.url(),
+            method: res.request().method(),
+            statusCode: res.status(),
+          });
+        }
       });
-    }
 
-    if (rand > 0.7) {
-      failedRequests.push({
-        url: `https://analytics.example.com/track`,
-        method: "POST",
-        statusCode: 0,
-        errorMessage: "net::ERR_BLOCKED_BY_CLIENT",
-      });
-    }
+      // ── Navigate and wait ────────────────────────────────────────────────
+      try {
+        await page.goto(url, {
+          waitUntil: "networkidle",
+          timeout: options.timeout ?? 25000,
+        });
+      } catch {
+        // Timeout is acceptable — we still return whatever was captured
+      }
 
-    return {
-      consoleMessages: messages,
-      networkFailures: failedRequests,
-      uncaughtExceptions: uncaught,
-    };
+      await page.waitForTimeout(1000);
+
+      return { logs, uncaughtExceptions, failedRequests };
+    }, { timeoutMs: 35000 });
   },
 };
 
 class ConsoleErrorCollector implements AuditScanner<ConsoleErrors> {
   readonly name = "console-errors" as const;
-  readonly description = "Captures browser console errors, warnings, and failed network requests";
-  readonly version = "1.0.0";
+  readonly description = "Captures browser console errors, JS exceptions, and failed requests via Playwright";
+  readonly version = "2.0.0";
   readonly adapter = "playwright-cdp";
 
-  private browserAdapter: BrowserConsoleAdapter;
+  private consoleAdapter: BrowserConsoleAdapter;
 
-  constructor(adapter: BrowserConsoleAdapter = mockBrowserConsoleAdapter) {
-    this.browserAdapter = adapter;
+  constructor(adapter: BrowserConsoleAdapter = realConsoleAdapter) {
+    this.consoleAdapter = adapter;
   }
 
   async run(context: AuditContext): Promise<ConsoleErrors> {
     const startedAt = new Date();
 
     try {
-      const result = await this.browserAdapter.collect(context.url, { waitMs: 5000 });
+      const { logs, uncaughtExceptions, failedRequests } =
+        await this.consoleAdapter.collect(context.url, { timeout: 25000 });
+
+      const errorLogs   = logs.filter(l => l.level === "error");
+      const warningLogs = logs.filter(l => l.level === "warning");
 
       const completedAt = new Date();
       return {
@@ -132,11 +126,17 @@ class ConsoleErrorCollector implements AuditScanner<ConsoleErrors> {
         completedAt,
         durationMs: completedAt.getTime() - startedAt.getTime(),
         success: true,
-        errors: result.consoleMessages,
-        totalErrors: result.consoleMessages.filter(m => m.level === "error").length,
-        totalWarnings: result.consoleMessages.filter(m => m.level === "warning").length,
-        uncaughtExceptions: result.uncaughtExceptions,
-        failedRequests: result.networkFailures,
+        // All log levels go into errors[] — warnings are included with level "warning"
+        errors: logs.map(e => ({
+          level: e.level,
+          message: e.message,
+          source: e.source,
+          lineNumber: e.lineNumber,
+        })),
+        totalErrors: errorLogs.length + uncaughtExceptions,
+        totalWarnings: warningLogs.length,
+        uncaughtExceptions,
+        failedRequests,
       };
     } catch (error) {
       const completedAt = new Date();
@@ -146,7 +146,7 @@ class ConsoleErrorCollector implements AuditScanner<ConsoleErrors> {
         completedAt,
         durationMs: completedAt.getTime() - startedAt.getTime(),
         success: false,
-        error: error instanceof Error ? error.message : "Console collection failed",
+        error: error instanceof Error ? error.message : "Console error collection failed",
         errors: [],
         totalErrors: 0,
         totalWarnings: 0,

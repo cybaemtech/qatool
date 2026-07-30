@@ -1,103 +1,164 @@
-// ─── Network Request Analyzer ─────────────────────────────────────────────────
-// Mock implementation. Replace with Playwright HAR capture / WebPageTest API.
-// Interface: AuditScanner<NetworkRequests>
+// ─── Network Analyzer ─────────────────────────────────────────────────────────
+// Real implementation using Playwright to capture all network requests during
+// page load: timings, sizes, status codes, third-party origins, slow requests.
 
 import type { AuditScanner, AuditContext, NetworkRequests } from "../audit-types";
+import { withPage } from "./playwright-browser";
 
+// Kept as NetworkHARAdapter to match the existing index.ts re-export
 export interface NetworkHARAdapter {
-  captureHAR(url: string): Promise<{
+  analyze(url: string, options?: { timeout?: number }): Promise<{
     entries: Array<{
       url: string;
       method: string;
       statusCode: number;
-      durationMs: number;
+      resourceType: string;
       sizeBytes: number;
-      type: "document" | "script" | "stylesheet" | "image" | "font" | "xhr" | "fetch" | "other";
+      durationMs: number;
       cached: boolean;
-      domain: string;
-      initiatorDomain: string;
+      isThirdParty: boolean;
     }>;
   }>;
 }
 
-const mockNetworkHARAdapter: NetworkHARAdapter = {
-  async captureHAR(url) {
-    const rand = Math.random();
-    const domain = new URL(url).hostname;
+// ─── Real adapter: Playwright network interception ────────────────────────────
 
-    const entries = [
-      { url, method: "GET", statusCode: 200, durationMs: Math.round(150 + rand * 500), sizeBytes: 12400, type: "document" as const, cached: false, domain, initiatorDomain: domain },
-      { url: `${url}/assets/main.js`, method: "GET", statusCode: 200, durationMs: Math.round(200 + rand * 800), sizeBytes: Math.round(320000 + rand * 480000), type: "script" as const, cached: rand > 0.5, domain, initiatorDomain: domain },
-      { url: `${url}/assets/vendor.js`, method: "GET", statusCode: 200, durationMs: Math.round(300 + rand * 1200), sizeBytes: Math.round(480000 + rand * 720000), type: "script" as const, cached: rand > 0.4, domain, initiatorDomain: domain },
-      { url: `${url}/assets/app.css`, method: "GET", statusCode: 200, durationMs: Math.round(80 + rand * 200), sizeBytes: Math.round(45000 + rand * 85000), type: "stylesheet" as const, cached: rand > 0.6, domain, initiatorDomain: domain },
-      { url: `${url}/images/hero.webp`, method: "GET", statusCode: 200, durationMs: Math.round(100 + rand * 400), sizeBytes: Math.round(180000 + rand * 620000), type: "image" as const, cached: rand > 0.3, domain, initiatorDomain: domain },
-      { url: `${url}/api/user`, method: "GET", statusCode: 200, durationMs: Math.round(80 + rand * 320), sizeBytes: 1240, type: "fetch" as const, cached: false, domain, initiatorDomain: domain },
-      { url: "https://www.google-analytics.com/analytics.js", method: "GET", statusCode: 200, durationMs: Math.round(60 + rand * 180), sizeBytes: 48200, type: "script" as const, cached: rand > 0.7, domain: "www.google-analytics.com", initiatorDomain: domain },
-      { url: "https://connect.facebook.net/en_US/fbevents.js", method: "GET", statusCode: 200, durationMs: Math.round(120 + rand * 280), sizeBytes: 32800, type: "script" as const, cached: rand > 0.6, domain: "connect.facebook.net", initiatorDomain: domain },
-      { url: `https://fonts.googleapis.com/css2?family=Inter`, method: "GET", statusCode: 200, durationMs: Math.round(40 + rand * 100), sizeBytes: 4200, type: "stylesheet" as const, cached: rand > 0.8, domain: "fonts.googleapis.com", initiatorDomain: domain },
-      ...(rand > 0.6 ? [{ url: `${url}/api/slow-endpoint`, method: "POST", statusCode: rand > 0.8 ? 500 : 200, durationMs: Math.round(2000 + rand * 3000), sizeBytes: 840, type: "fetch" as const, cached: false, domain, initiatorDomain: domain }] : []),
-    ];
+const realNetworkAdapter: NetworkHARAdapter = {
+  async analyze(url, options = {}) {
+    return withPage(async (page) => {
+      const entries: Array<{
+        url: string;
+        method: string;
+        statusCode: number;
+        resourceType: string;
+        sizeBytes: number;
+        durationMs: number;
+        cached: boolean;
+        isThirdParty: boolean;
+      }> = [];
 
-    return { entries };
+      const origin = new URL(url).origin;
+      const timings = new Map<string, number>();
+
+      page.on("request", (req) => {
+        timings.set(req.url(), Date.now());
+      });
+
+      page.on("response", async (res) => {
+        const reqUrl = res.url();
+        const startTime = timings.get(reqUrl) ?? Date.now();
+        const durationMs = Date.now() - startTime;
+
+        let sizeBytes = 0;
+        const contentLength = res.headers()["content-length"];
+        if (contentLength) {
+          sizeBytes = parseInt(contentLength, 10) || 0;
+        } else if (res.status() < 300 && res.status() !== 204) {
+          try {
+            const body = await res.body();
+            sizeBytes = body.length;
+          } catch {
+            sizeBytes = 0;
+          }
+        }
+
+        const cacheControl = res.headers()["cache-control"] ?? "";
+        const cached =
+          res.status() === 304 ||
+          (cacheControl.includes("max-age") && !cacheControl.includes("no-cache")) ||
+          (res.headers()["x-cache"] ?? "").toUpperCase().includes("HIT");
+
+        entries.push({
+          url: reqUrl,
+          method: res.request().method(),
+          statusCode: res.status(),
+          resourceType: res.request().resourceType(),
+          sizeBytes,
+          durationMs,
+          cached,
+          isThirdParty: !reqUrl.startsWith(origin),
+        });
+      });
+
+      try {
+        await page.goto(url, {
+          waitUntil: "networkidle",
+          timeout: options.timeout ?? 25000,
+        });
+      } catch {
+        // Timeout: return what was captured
+      }
+
+      await page.waitForTimeout(500);
+      return { entries };
+    }, { timeoutMs: 35000 });
   },
 };
 
+// Map Playwright resourceType to the NetworkRequests slowRequests.type enum
+function toSlowType(
+  rt: string,
+): "document" | "script" | "stylesheet" | "image" | "font" | "xhr" | "fetch" | "other" {
+  const map: Record<string, "document" | "script" | "stylesheet" | "image" | "font" | "xhr" | "fetch" | "other"> = {
+    document: "document",
+    script: "script",
+    stylesheet: "stylesheet",
+    image: "image",
+    font: "font",
+    xhr: "xhr",
+    fetch: "fetch",
+  };
+  return map[rt] ?? "other";
+}
+
 class NetworkAnalyzer implements AuditScanner<NetworkRequests> {
   readonly name = "network" as const;
-  readonly description = "Analyzes network requests for performance bottlenecks and third-party impact";
-  readonly version = "1.0.0";
-  readonly adapter = "playwright-har";
+  readonly description = "Captures all network requests during page load via Playwright: timings, sizes, failures";
+  readonly version = "2.0.0";
+  readonly adapter = "playwright-network";
 
-  private harAdapter: NetworkHARAdapter;
+  private networkAdapter: NetworkHARAdapter;
 
-  constructor(adapter: NetworkHARAdapter = mockNetworkHARAdapter) {
-    this.harAdapter = adapter;
+  constructor(adapter: NetworkHARAdapter = realNetworkAdapter) {
+    this.networkAdapter = adapter;
   }
 
   async run(context: AuditContext): Promise<NetworkRequests> {
     const startedAt = new Date();
 
     try {
-      const { entries } = await this.harAdapter.captureHAR(context.url);
-      const domain = new URL(context.url).hostname;
+      const { entries } = await this.networkAdapter.analyze(context.url, {
+        timeout: 25000,
+      });
 
       const failed = entries.filter(e => e.statusCode >= 400 || e.statusCode === 0);
-      const slow = entries
-        .filter(e => e.durationMs > 500)
+      const slow   = entries
+        .filter(e => e.durationMs > 1000 && e.statusCode < 400)
         .sort((a, b) => b.durationMs - a.durationMs)
-        .slice(0, 10)
-        .map(e => ({
-          url: e.url,
-          method: e.method,
-          durationMs: e.durationMs,
-          sizeBytes: e.sizeBytes,
-          type: e.type,
-          cached: e.cached,
-          statusCode: e.statusCode,
-        }));
+        .slice(0, 10);
 
-      // Group third-party by domain
-      const thirdPartyMap = new Map<string, { count: number; size: number }>();
-      for (const e of entries) {
-        if (!e.domain.includes(domain) && e.domain !== domain) {
-          const existing = thirdPartyMap.get(e.domain) ?? { count: 0, size: 0 };
-          thirdPartyMap.set(e.domain, { count: existing.count + 1, size: existing.size + e.sizeBytes });
-        }
+      // Group third-party requests by domain
+      const thirdPartyDomains = new Map<string, typeof entries>();
+      for (const e of entries.filter(e => e.isThirdParty)) {
+        try {
+          const d = new URL(e.url).hostname;
+          if (!thirdPartyDomains.has(d)) thirdPartyDomains.set(d, []);
+          thirdPartyDomains.get(d)!.push(e);
+        } catch { /* skip */ }
       }
 
-      const thirdPartyRequests: NetworkRequests["thirdPartyRequests"] = Array.from(thirdPartyMap.entries()).map(([d, stats]) => ({
-        domain: d,
-        requestCount: stats.count,
-        totalSizeBytes: stats.size,
-        impact: d.includes("analytics") || d.includes("facebook") ? "blocking" : "async",
-        category: d.includes("analytics") || d.includes("google-analytics") ? "analytics"
-          : d.includes("facebook") || d.includes("doubleclick") ? "advertising"
-          : d.includes("fonts") ? "cdn"
-          : "other",
+      const thirdPartyRequests: NetworkRequests["thirdPartyRequests"] = Array.from(
+        thirdPartyDomains.entries(),
+      ).map(([domain, reqs]) => ({
+        domain,
+        requestCount: reqs.length,
+        totalSizeBytes: reqs.reduce((s, r) => s + r.sizeBytes, 0),
+        impact: "deferred" as const,   // conservative; can't determine blocking vs async without timing waterfall
+        category: "other" as const,
       }));
 
-      const totalSize = entries.reduce((acc, e) => acc + e.sizeBytes, 0);
-      const totalDuration = entries.reduce((acc, e) => acc + e.durationMs, 0);
+      const totalSize    = entries.reduce((s, e) => s + e.sizeBytes, 0);
+      const totalDuration = entries.reduce((s, e) => s + e.durationMs, 0);
       const uncached = entries.filter(e => !e.cached && e.statusCode === 200).length;
 
       const completedAt = new Date();
@@ -113,14 +174,29 @@ class NetworkAnalyzer implements AuditScanner<NetworkRequests> {
           totalTransferSizeBytes: totalSize,
           totalDurationMs: totalDuration,
           cachingOpportunities: Math.max(0, uncached - 2),
-          compressionOpportunities: Math.round(entries.length * 0.15),
+          compressionOpportunities: entries.filter(
+            e => !e.cached &&
+              e.sizeBytes > 1024 &&
+              ["document", "script", "stylesheet", "fetch", "xhr"].includes(e.resourceType),
+          ).length,
         },
-        slowRequests: slow,
+        slowRequests: slow.map(e => ({
+          url: e.url,
+          method: e.method,
+          durationMs: e.durationMs,
+          sizeBytes: e.sizeBytes,
+          type: toSlowType(e.resourceType),
+          cached: e.cached,
+          statusCode: e.statusCode,
+        })),
         thirdPartyRequests,
         failedRequests: failed.map(e => ({
           url: e.url,
           statusCode: e.statusCode,
-          errorType: e.statusCode >= 500 ? "server-error" : e.statusCode >= 400 ? "client-error" : "connection-error",
+          errorType:
+            e.statusCode >= 500 ? "server-error" :
+            e.statusCode >= 400 ? "client-error" :
+            "connection-error",
           method: e.method,
         })),
       };
@@ -133,7 +209,14 @@ class NetworkAnalyzer implements AuditScanner<NetworkRequests> {
         durationMs: completedAt.getTime() - startedAt.getTime(),
         success: false,
         error: error instanceof Error ? error.message : "Network analysis failed",
-        summary: { totalRequests: 0, failedRequests: 0, totalTransferSizeBytes: 0, totalDurationMs: 0, cachingOpportunities: 0, compressionOpportunities: 0 },
+        summary: {
+          totalRequests: 0,
+          failedRequests: 0,
+          totalTransferSizeBytes: 0,
+          totalDurationMs: 0,
+          cachingOpportunities: 0,
+          compressionOpportunities: 0,
+        },
         slowRequests: [],
         thirdPartyRequests: [],
         failedRequests: [],

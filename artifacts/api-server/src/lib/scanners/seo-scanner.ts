@@ -1,7 +1,9 @@
 // ─── SEO Scanner ───────────────────────────────────────────────────────────────
-// Mock implementation. Replace with Google Search Console API / Screaming Frog.
-// Interface: AuditScanner<SEOAnalysis>
+// Real implementation using built-in fetch + cheerio for HTML parsing.
+// Checks meta tags, OG tags, headings, canonical, sitemap, robots.txt,
+// and structured data — no browser required.
 
+import * as cheerio from "cheerio";
 import type { AuditScanner, AuditContext, SEOAnalysis } from "../audit-types";
 
 export interface SEOAdapter {
@@ -36,40 +38,139 @@ const COMMON_SEO_ISSUES = [
   { id: "missing-og-tags", severity: "medium" as const, description: "Open Graph tags missing — poor social media preview", recommendation: "Add og:title, og:description, og:image for all shareable pages" },
 ];
 
-const mockSEOAdapter: SEOAdapter = {
+// ─── Real adapter using fetch + cheerio ───────────────────────────────────────
+
+const realSEOAdapter: SEOAdapter = {
   async fetchMetadata(url) {
-    const rand = Math.random();
-    const hasDesc = rand > 0.3;
-    const hasOg = rand > 0.4;
-    return {
-      title: `${new URL(url).hostname} — Home`,
-      description: hasDesc ? "We build quality software solutions for modern enterprises." : null,
-      ogTitle: hasOg ? "Welcome to Our Platform" : null,
-      ogDescription: hasOg ? "Build faster with our tools" : null,
-      ogImage: hasOg ? `${url}/og-image.png` : null,
-      twitterCard: rand > 0.5 ? "summary_large_image" : null,
-      canonical: rand > 0.4 ? url : null,
-      robots: "index, follow",
-      viewport: "width=device-width, initial-scale=1",
-      h1s: rand > 0.2 ? ["Welcome to Our Platform"] : [],
-      h2s: ["Features", "Pricing", "About"],
-      h3s: ["Performance", "Security", "Reliability"],
-      sitemapFound: rand > 0.3,
-      robotsTxtFound: rand > 0.2,
-      structuredDataTypes: rand > 0.5 ? ["Organization", "WebPage"] : [],
-    };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; QAPortalBot/1.0; +https://qa-portal.dev/bot)",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        redirect: "follow",
+      });
+
+      const html = await res.text();
+      const $ = cheerio.load(html);
+
+      // ── Meta tags ──────────────────────────────────────────────────────────
+      const title = $("title").first().text().trim() || null;
+      const description =
+        $('meta[name="description"]').attr("content")?.trim() ||
+        $('meta[property="og:description"]').attr("content")?.trim() ||
+        null;
+      const ogTitle = $('meta[property="og:title"]').attr("content")?.trim() || null;
+      const ogDescription = $('meta[property="og:description"]').attr("content")?.trim() || null;
+      const ogImage = $('meta[property="og:image"]').attr("content")?.trim() || null;
+      const twitterCard = $('meta[name="twitter:card"]').attr("content")?.trim() || null;
+      const canonical = $('link[rel="canonical"]').attr("href")?.trim() || null;
+      const robots =
+        $('meta[name="robots"]').attr("content")?.trim() ||
+        res.headers.get("x-robots-tag") ||
+        null;
+      const viewport = $('meta[name="viewport"]').attr("content")?.trim() || null;
+
+      // ── Headings ──────────────────────────────────────────────────────────
+      const h1s: string[] = [];
+      $("h1").each((_, el) => {
+        const text = $(el).text().trim();
+        if (text) h1s.push(text);
+      });
+      const h2s: string[] = [];
+      $("h2").each((_, el) => {
+        const text = $(el).text().trim();
+        if (text) h2s.push(text);
+      });
+      const h3s: string[] = [];
+      $("h3").each((_, el) => {
+        const text = $(el).text().trim();
+        if (text) h3s.push(text);
+      });
+
+      // ── Structured data ────────────────────────────────────────────────────
+      const structuredDataTypes: string[] = [];
+      $('script[type="application/ld+json"]').each((_, el) => {
+        try {
+          const json = JSON.parse($(el).html() || "{}");
+          const types = Array.isArray(json)
+            ? json.map((j: { "@type"?: string }) => j["@type"]).filter(Boolean)
+            : json["@type"]
+            ? [json["@type"]]
+            : [];
+          structuredDataTypes.push(...types);
+        } catch {
+          // malformed JSON-LD, skip
+        }
+      });
+
+      // ── Sitemap + robots.txt ───────────────────────────────────────────────
+      const origin = new URL(url).origin;
+
+      const [sitemapRes, robotsRes] = await Promise.allSettled([
+        fetch(`${origin}/sitemap.xml`, {
+          method: "HEAD",
+          signal: AbortSignal.timeout(8000),
+          headers: { "User-Agent": "QAPortalBot/1.0" },
+          redirect: "follow",
+        }),
+        fetch(`${origin}/robots.txt`, {
+          signal: AbortSignal.timeout(8000),
+          headers: { "User-Agent": "QAPortalBot/1.0" },
+          redirect: "follow",
+        }),
+      ]);
+
+      const sitemapFound =
+        sitemapRes.status === "fulfilled" && sitemapRes.value.ok;
+
+      // Also check if robots.txt mentions a sitemap
+      let robotsTxtFound = false;
+      if (robotsRes.status === "fulfilled" && robotsRes.value.ok) {
+        robotsTxtFound = true;
+        const robotsText = await robotsRes.value.text();
+        if (!sitemapFound && robotsText.toLowerCase().includes("sitemap:")) {
+          // robots.txt references a sitemap even if /sitemap.xml 404'd
+        }
+      }
+
+      return {
+        title,
+        description,
+        ogTitle,
+        ogDescription,
+        ogImage,
+        twitterCard,
+        canonical,
+        robots,
+        viewport,
+        h1s,
+        h2s,
+        h3s,
+        sitemapFound,
+        robotsTxtFound,
+        structuredDataTypes: [...new Set(structuredDataTypes)],
+      };
+    } finally {
+      clearTimeout(timer);
+    }
   },
 };
 
 class SEOScanner implements AuditScanner<SEOAnalysis> {
   readonly name = "seo" as const;
   readonly description = "Analyzes meta tags, headings, structured data, and crawlability";
-  readonly version = "1.0.0";
-  readonly adapter = "custom-fetch";
+  readonly version = "2.0.0";
+  readonly adapter = "real-fetch-cheerio";
 
   private seoAdapter: SEOAdapter;
 
-  constructor(adapter: SEOAdapter = mockSEOAdapter) {
+  constructor(adapter: SEOAdapter = realSEOAdapter) {
     this.seoAdapter = adapter;
   }
 
@@ -78,24 +179,31 @@ class SEOScanner implements AuditScanner<SEOAnalysis> {
 
     try {
       const meta = await this.seoAdapter.fetchMetadata(context.url);
-      const rand = Math.random();
 
-      // Determine active issues based on metadata
+      // ── Issue detection based on real metadata ─────────────────────────────
       const issues: SEOAnalysis["issues"] = [];
 
       if (!meta.description || meta.description.length < 50) {
         issues.push(COMMON_SEO_ISSUES[0]);
       }
-      if (rand > 0.7) issues.push(COMMON_SEO_ISSUES[1]); // duplicate title
-      if (rand > 0.5) issues.push(COMMON_SEO_ISSUES[2]); // missing alt
-      if (!meta.sitemapFound) issues.push(COMMON_SEO_ISSUES[4]);
-      if (!meta.canonical) issues.push(COMMON_SEO_ISSUES[5]);
-      if (meta.h1s.length !== 1) issues.push(COMMON_SEO_ISSUES[6]);
-      if (meta.structuredDataTypes.length === 0) issues.push(COMMON_SEO_ISSUES[7]);
-      if (!meta.ogTitle) issues.push(COMMON_SEO_ISSUES[8]);
+      if (!meta.sitemapFound) {
+        issues.push(COMMON_SEO_ISSUES[4]);
+      }
+      if (!meta.canonical) {
+        issues.push(COMMON_SEO_ISSUES[5]);
+      }
+      if (meta.h1s.length !== 1) {
+        issues.push(COMMON_SEO_ISSUES[6]);
+      }
+      if (meta.structuredDataTypes.length === 0) {
+        issues.push(COMMON_SEO_ISSUES[7]);
+      }
+      if (!meta.ogTitle || !meta.ogDescription || !meta.ogImage) {
+        issues.push(COMMON_SEO_ISSUES[8]);
+      }
 
       // Score: start at 100, deduct per issue
-      const deductions = { critical: 20, high: 12, medium: 6, low: 3 };
+      const deductions: Record<string, number> = { critical: 20, high: 12, medium: 6, low: 3 };
       const penalty = issues.reduce((acc, i) => acc + (deductions[i.severity] ?? 0), 0);
       const score = Math.max(0, Math.min(100, 100 - penalty));
 
@@ -124,11 +232,12 @@ class SEOScanner implements AuditScanner<SEOAnalysis> {
           h1Count: meta.h1s.length,
           h2Count: meta.h2s.length,
           h3Count: meta.h3s.length,
-          issues: meta.h1s.length === 0
-            ? ["Missing H1 heading"]
-            : meta.h1s.length > 1
-            ? [`Multiple H1 headings found (${meta.h1s.length})`]
-            : [],
+          issues:
+            meta.h1s.length === 0
+              ? ["Missing H1 heading"]
+              : meta.h1s.length > 1
+              ? [`Multiple H1 headings found (${meta.h1s.length})`]
+              : [],
         },
         sitemapFound: meta.sitemapFound,
         robotsTxtFound: meta.robotsTxtFound,
@@ -150,7 +259,19 @@ class SEOScanner implements AuditScanner<SEOAnalysis> {
         success: false,
         error: error instanceof Error ? error.message : "SEO scan failed",
         score: 0,
-        metaTags: { title: null, titleLength: 0, description: null, descriptionLength: 0, ogTitle: null, ogDescription: null, ogImage: null, twitterCard: null, canonical: null, robots: null, viewport: null },
+        metaTags: {
+          title: null,
+          titleLength: 0,
+          description: null,
+          descriptionLength: 0,
+          ogTitle: null,
+          ogDescription: null,
+          ogImage: null,
+          twitterCard: null,
+          canonical: null,
+          robots: null,
+          viewport: null,
+        },
         headingStructure: { h1Count: 0, h2Count: 0, h3Count: 0, issues: [] },
         sitemapFound: false,
         robotsTxtFound: false,

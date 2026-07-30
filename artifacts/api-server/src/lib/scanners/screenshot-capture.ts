@@ -1,8 +1,9 @@
 // ─── Screenshot Capture ───────────────────────────────────────────────────────
-// Mock implementation. Replace with Playwright / Puppeteer screenshot API.
-// Interface: AuditScanner<ScreenshotResult>
+// Real implementation using Playwright to capture full-page and viewport
+// screenshots across desktop, tablet, and mobile breakpoints.
 
 import type { AuditScanner, AuditContext, ScreenshotResult } from "../audit-types";
+import { withPage } from "./playwright-browser";
 
 export interface ScreenshotAdapter {
   capture(url: string, options: {
@@ -16,36 +17,50 @@ export interface ScreenshotAdapter {
   }>;
 }
 
-// 1×1 transparent WebP placeholder (replace with real screenshot in production)
-const PLACEHOLDER_WEBP = "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAkA4JZQCdAEO/gHOAAA=";
+const VIEWPORTS = {
+  desktop: { width: 1920, height: 1080 },
+  tablet:  { width: 768,  height: 1024 },
+  mobile:  { width: 390,  height: 844  },
+} as const;
 
-const mockScreenshotAdapter: ScreenshotAdapter = {
-  async capture(_url, options) {
-    // In production: return actual Playwright screenshot as base64 WebP
-    const sizeMap = { desktop: 18400, tablet: 12800, mobile: 8200 };
-    return {
-      dataUrl: PLACEHOLDER_WEBP,
-      fileSizeBytes: sizeMap[options.deviceType],
-      format: "webp",
-    };
+// ─── Real adapter: Playwright screenshots ────────────────────────────────────
+
+const realScreenshotAdapter: ScreenshotAdapter = {
+  async capture(url, options) {
+    return withPage(
+      async (page) => {
+        await page.setViewportSize(options.viewport);
+        await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25000 });
+        // Give JS a moment to render
+        await page.waitForTimeout(1500);
+
+        const buffer = await page.screenshot({
+          type: "jpeg",
+          quality: 80,
+          fullPage: options.fullPage ?? false,
+        });
+
+        const dataUrl = "data:image/jpeg;base64," + buffer.toString("base64");
+        return {
+          dataUrl,
+          fileSizeBytes: buffer.length,
+          format: "jpeg" as const,
+        };
+      },
+      { timeoutMs: 30000 },
+    );
   },
 };
 
-const VIEWPORTS = {
-  desktop: { width: 1920, height: 1080 },
-  tablet: { width: 768, height: 1024 },
-  mobile: { width: 390, height: 844 },
-} as const;
-
 class ScreenshotCapture implements AuditScanner<ScreenshotResult> {
   readonly name = "screenshot" as const;
-  readonly description = "Captures full-page screenshots across desktop, tablet, and mobile viewports";
-  readonly version = "1.0.0";
-  readonly adapter = "playwright-screenshot";
+  readonly description = "Captures screenshots across desktop, tablet, and mobile viewports using Playwright";
+  readonly version = "2.0.0";
+  readonly adapter = "playwright";
 
   private screenshotAdapter: ScreenshotAdapter;
 
-  constructor(adapter: ScreenshotAdapter = mockScreenshotAdapter) {
+  constructor(adapter: ScreenshotAdapter = realScreenshotAdapter) {
     this.screenshotAdapter = adapter;
   }
 
@@ -55,9 +70,14 @@ class ScreenshotCapture implements AuditScanner<ScreenshotResult> {
 
     try {
       const screenshots: ScreenshotResult["screenshots"] = [];
+
       for (const deviceType of devices) {
         const viewport = VIEWPORTS[deviceType];
-        const capture = await this.screenshotAdapter.capture(context.url, { viewport, deviceType, fullPage: false });
+        const capture = await this.screenshotAdapter.capture(context.url, {
+          viewport,
+          deviceType,
+          fullPage: false,
+        });
         screenshots.push({
           deviceType,
           viewport,
@@ -68,7 +88,7 @@ class ScreenshotCapture implements AuditScanner<ScreenshotResult> {
         });
       }
 
-      // Optional full-page desktop screenshot
+      // Full-page desktop screenshot
       const fullPage = await this.screenshotAdapter.capture(context.url, {
         viewport: VIEWPORTS.desktop,
         deviceType: "desktop",
@@ -85,7 +105,10 @@ class ScreenshotCapture implements AuditScanner<ScreenshotResult> {
         screenshots,
         fullPageScreenshot: {
           dataUrl: fullPage.dataUrl,
-          dimensions: { width: VIEWPORTS.desktop.width, height: VIEWPORTS.desktop.height * 3 },
+          dimensions: {
+            width: VIEWPORTS.desktop.width,
+            height: VIEWPORTS.desktop.height * 3,
+          },
         },
       };
     } catch (error) {
