@@ -135,7 +135,7 @@ router.get("/feedback/stats", requireAuth, async (_req, res) => {
     implemented: implemented.count,
     rejected: rejected.count,
     mostRequested: topSuggestion ?? null,
-    averageResponseTimeHours: 48, // placeholder — compute from real timestamps in production
+    averageResponseTimeHours: null, // computed from real timestamps when data is available
   });
 });
 

@@ -1,0 +1,294 @@
+The Website Audit Engine is now functional.
+
+DO NOT redesign any UI.
+DO NOT create new pages.
+DO NOT modify navigation.
+DO NOT change the AuditResult schema.
+
+Your task is to perform a complete production-quality audit of the existing implementation and improve accuracy, completeness and reliability.
+
+=========================================================
+PHASE 1 - FIX REMAINING SCANNERS
+=========================================================
+
+1. Broken Link Scanner
+
+Currently the scanner reports:
+
+- 0 internal links
+- 0 external links
+- 0 links checked
+
+This is incorrect.
+
+Implement a real crawler that:
+
+• extracts every <a> tag
+• resolves relative URLs
+• separates internal/external links
+• follows redirects
+• checks HTTP status
+• reports:
+
+- total links
+- internal links
+- external links
+- broken links
+- redirect chains
+- broken images
+
+Do not use placeholder values.
+
+=========================================================
+
+2. Technology Detection
+
+Improve detection using browser inspection.
+
+Detect whenever possible:
+
+React
+Angular
+Vue
+Next.js
+Nuxt
+WordPress
+Shopify
+Tailwind
+Bootstrap
+jQuery
+Vite
+Webpack
+Cloudflare
+Google Analytics
+Google Tag Manager
+Meta Pixel
+LinkedIn Insight
+Microsoft Clarity
+Hotjar
+etc.
+
+=========================================================
+
+3. SEO Scanner
+
+Improve DOM inspection.
+
+Correctly detect:
+
+H1
+H2
+H3
+
+after page rendering.
+
+Current scanner reports H1=0 on pages that contain headings.
+
+Verify:
+
+title
+
+description
+
+canonical
+
+robots
+
+structured data
+
+OpenGraph
+
+Twitter Cards
+
+image alt
+
+heading hierarchy
+
+=========================================================
+
+4. AI Summary
+
+Completely remove template summaries.
+
+Generate summaries dynamically from actual scanner findings.
+
+The summary must include:
+
+Overall health
+
+Highest priority issues
+
+Performance analysis
+
+Accessibility analysis
+
+Security analysis
+
+SEO analysis
+
+Recommended fix order
+
+Estimated business impact
+
+Never use fixed text.
+
+=========================================================
+
+5. Security Scanner
+
+Improve detection of:
+
+CSP
+
+HSTS
+
+X-Frame
+
+Referrer Policy
+
+Permissions Policy
+
+Cookie Security
+
+Mixed Content
+
+Report exact missing headers.
+
+=========================================================
+
+6. Network Scanner
+
+Expand analysis.
+
+Include:
+
+largest requests
+
+slowest requests
+
+largest images
+
+largest JS
+
+largest CSS
+
+cache headers
+
+compression
+
+waterfall summary
+
+=========================================================
+
+7. Screenshot Scanner
+
+Improve screenshots.
+
+Generate:
+
+Desktop
+
+Tablet
+
+Mobile
+
+Full Page
+
+Viewport
+
+Store metadata:
+
+resolution
+
+capture time
+
+page height
+
+page width
+
+=========================================================
+
+=========================================================
+PHASE 2 - VERIFY CALCULATIONS
+=========================================================
+
+Recalculate:
+
+Overall Score
+
+Health Score
+
+Confidence
+
+Bug Severity
+
+Risk Level
+
+Ensure every score is derived only from scanner outputs.
+
+No hardcoded values.
+
+=========================================================
+PHASE 3 - VALIDATION
+=========================================================
+
+Run the audit against the same website three consecutive times.
+
+Verify:
+
+✔ no fabricated values
+
+✔ stable scores
+
+✔ real screenshots
+
+✔ real console logs
+
+✔ real network requests
+
+✔ real Lighthouse metrics
+
+✔ real axe-core findings
+
+Explain any differences between runs.
+
+=========================================================
+PHASE 4 - FINAL CODE AUDIT
+=========================================================
+
+Search the entire repository for:
+
+Math.random
+
+fake
+
+mock
+
+placeholder
+
+dummy
+
+sample
+
+test data
+
+generated findings
+
+Remove every remaining occurrence related to audit generation.
+
+=========================================================
+SUCCESS CRITERIA
+=========================================================
+
+The Website QA Platform should now behave like a production website auditing platform similar to Lighthouse + axe-core + Playwright.
+
+Keep the UI exactly as it is.
+
+Focus only on improving scanner accuracy, reliability and completeness.
+
+At the end provide:
+
+1. Everything improved.
+2. Any remaining limitations.
+3. Production readiness score.
+4. Suggestions for Version 2.

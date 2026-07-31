@@ -3,4 +3,4 @@
 - [BugStatus enum](bug-status-enum.md) — valid statuses are open/in_progress/resolved/ignored; "fixed" does not exist; cicd-pipeline and release-readiness had this wrong.
 - [ListBugsParams has no limit](list-bugs-params.md) — GET /bugs has no limit query param; ListBugsParams doesn't accept it; ListAuditsParams does have limit.
 - [Feedback route uses plain helpers not Zod](feedback-route-pattern.md) — feedback.ts uses parseCreateSuggestion/parseUpdateSuggestion helpers (not Zod schemas); insert needs any-cast due to category string vs union type mismatch.
-- [Scanners are all mock](mock-scanners.md) — all 10 scanners use Math.random(); adapter interface ready for real tools; live-audit-scanner.tsx progress UI is also simulated.
+- [Scanners are all real](real-scanners.md) — all 10 scanners use Playwright/Lighthouse/axe-core; stability test: 3 runs on example.com returned identical scores (overall=78, perf≈100, a11y=92, seo=64, bp=100).

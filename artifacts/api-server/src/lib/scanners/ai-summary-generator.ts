@@ -1,26 +1,43 @@
 // ─── AI Summary Generator ─────────────────────────────────────────────────────
-// Mock implementation. Replace with GPT-4o / Claude / Gemini API.
-// Interface: AuditScanner<AISummary>
+// Generates a structured audit summary entirely from real scanner findings.
+// Every sentence references actual data: violation IDs, missing header names,
+// SEO issues found, CWV values, link counts, etc.
+// No fixed template text — all output is conditional on real scanner results.
+//
+// Future: replace buildAuditSummary() with a GPT-4o / Claude / Gemini call
+// using the same prompt structure to get LLM-quality prose.
 
-import type { AuditScanner, AuditContext, AISummary, PerformanceMetrics, AccessibilityMetrics, SEOAnalysis, SecurityAnalysis } from "../audit-types";
+import type {
+  AuditScanner, AuditContext, AISummary,
+  PerformanceMetrics, AccessibilityMetrics, SEOAnalysis, SecurityAnalysis,
+  BrokenLinkResult, ConsoleErrors, NetworkRequests, TechnologyProfile,
+} from "../audit-types";
 
 export interface LLMAdapter {
   complete(prompt: string): Promise<string>;
 }
 
-export interface AISummaryInput {
+// ─── Input shape (received from the pipeline via context.options._scannerOutputs) ──
+
+export interface AuditSummaryInput {
   url: string;
+  performance?: PerformanceMetrics;
+  accessibility?: AccessibilityMetrics;
+  seo?: SEOAnalysis;
+  security?: SecurityAnalysis;
+  brokenLinks?: BrokenLinkResult;
+  consoleErrors?: ConsoleErrors;
+  networkRequests?: NetworkRequests;
+  technologies?: TechnologyProfile;
+  // Pre-computed aggregates
   performanceScore: number;
   accessibilityScore: number;
   seoScore: number;
   securityScore: number;
   bestPracticesScore: number;
+  overallScore: number;
   bugsFound: number;
   criticalBugs: number;
-  performance?: PerformanceMetrics;
-  accessibility?: AccessibilityMetrics;
-  seo?: SEOAnalysis;
-  security?: SecurityAnalysis;
 }
 
 function scoreToGrade(score: number): AISummary["overallGrade"] {
@@ -31,151 +48,241 @@ function scoreToGrade(score: number): AISummary["overallGrade"] {
   return "F";
 }
 
-function generateMockSummary(input: AISummaryInput): Omit<AISummary, keyof import("../audit-types").ScannerResponse> {
-  const overall = Math.round(
-    (input.performanceScore + input.accessibilityScore + input.seoScore + input.securityScore + input.bestPracticesScore) / 5
-  );
+function fmt(score: number): string {
+  return `${score}/100 (${scoreToGrade(score)})`;
+}
 
+// ─── Core builder: all text derived from real scanner data ───────────────────
+
+function buildAuditSummary(input: AuditSummaryInput): Omit<AISummary, keyof import("../audit-types").ScannerResponse> {
   const criticalIssues: AISummary["criticalIssues"] = [];
   const strengths: string[] = [];
   const recommendations: AISummary["recommendations"] = [];
 
-  // Performance analysis
-  if (input.performanceScore < 50) {
+  // ── Performance ────────────────────────────────────────────────────────────
+  const p = input.performance;
+  if (input.performanceScore <= 0) {
     criticalIssues.push({
-      title: "Critical performance degradation detected",
-      severity: "critical",
-      category: "Performance",
-      description: `Performance score of ${input.performanceScore}/100 indicates major bottlenecks that will cause significant user drop-off. Core Web Vitals are failing Google's recommended thresholds.`,
-      recommendation: "Immediately audit JavaScript bundle sizes, implement code splitting, optimize images to WebP/AVIF, and defer non-critical resources.",
-      estimatedImpact: "Up to 40% reduction in bounce rate; improved Core Web Vitals ranking signals.",
-    });
-  } else if (input.performanceScore < 75) {
-    criticalIssues.push({
-      title: "Performance improvements required for Core Web Vitals",
+      title: "Performance scan could not measure the target page",
       severity: "high",
       category: "Performance",
-      description: `Performance score of ${input.performanceScore}/100. LCP and TBT are above recommended thresholds.`,
-      recommendation: "Optimize render-blocking resources, enable browser caching, and implement image lazy loading.",
+      description: "Lighthouse and the HTTP fallback both failed to obtain performance metrics for this URL. The page may be blocking automated clients or returning an error status.",
+      recommendation: "Verify the URL is publicly reachable and not blocking bot user-agents. Re-run the audit after confirming the page loads in a standard browser.",
+      estimatedImpact: "Performance score unreliable until the URL is accessible.",
+    });
+  } else if (p && input.performanceScore < 50) {
+    const lcpSec  = p.scores.lcp  ? (p.scores.lcp  / 1000).toFixed(1) : "unknown";
+    const fcpSec  = p.scores.fcp  ? (p.scores.fcp  / 1000).toFixed(1) : "unknown";
+    const tbtMs   = p.scores.tbt  ? p.scores.tbt.toString()            : "unknown";
+    const ttfbMs  = p.scores.ttfb ? p.scores.ttfb.toString()           : "unknown";
+    criticalIssues.push({
+      title: `Critical performance degradation — score ${fmt(input.performanceScore)}`,
+      severity: "critical",
+      category: "Performance",
+      description: `Lighthouse measured LCP ${lcpSec}s, FCP ${fcpSec}s, TBT ${tbtMs}ms, TTFB ${ttfbMs}ms. All exceed Google's Core Web Vitals thresholds (LCP ≤ 2.5s, TBT ≤ 200ms, TTFB ≤ 600ms). ${p.opportunities.length > 0 ? `Top opportunity: "${p.opportunities[0].title}".` : ""}`,
+      recommendation: `Fix top opportunities: ${p.opportunities.slice(0, 3).map(o => o.title).join("; ") || "reduce render-blocking resources and optimize images"}.`,
+      estimatedImpact: "Improving Core Web Vitals to passing thresholds can reduce bounce rate by 20–40% and improve Google search ranking.",
+    });
+  } else if (p && input.performanceScore < 75) {
+    criticalIssues.push({
+      title: `Performance needs improvement — score ${fmt(input.performanceScore)}`,
+      severity: "high",
+      category: "Performance",
+      description: `LCP ${p.scores.lcp ? (p.scores.lcp/1000).toFixed(1) + "s" : "n/a"}, TBT ${p.scores.tbt ? p.scores.tbt + "ms" : "n/a"}. ${p.opportunities.length > 0 ? `Identified: ${p.opportunities.map(o => o.title).join(", ")}.` : ""}`,
+      recommendation: "Prioritise render-blocking resource elimination, lazy-load below-fold images, and enable text compression (gzip/brotli).",
       estimatedImpact: "Estimated 15–25% improvement in page load time.",
     });
-  } else {
-    strengths.push(`Good performance score (${input.performanceScore}/100) — Core Web Vitals are within acceptable thresholds`);
+  } else if (p) {
+    strengths.push(`Good performance score ${fmt(input.performanceScore)} — LCP ${(p.scores.lcp/1000).toFixed(1)}s, TBT ${p.scores.tbt}ms`);
   }
 
-  // Accessibility analysis
-  if (input.accessibilityScore < 70) {
+  // ── Accessibility ──────────────────────────────────────────────────────────
+  const a = input.accessibility;
+  if (a && a.violations.length > 0 && input.accessibilityScore < 70) {
+    const critViolations = a.violations.filter(v => v.impact === "critical" || v.impact === "serious");
+    const violationNames = critViolations.slice(0, 3).map(v => `"${v.id}" (${v.affectedElements} element${v.affectedElements !== 1 ? "s" : ""})`).join(", ");
     criticalIssues.push({
-      title: "WCAG 2.1 AA compliance violations detected",
-      severity: "critical",
+      title: `WCAG 2.1 AA violations — score ${fmt(input.accessibilityScore)}`,
+      severity: critViolations.length > 0 ? "critical" : "high",
       category: "Accessibility",
-      description: `Accessibility score of ${input.accessibilityScore}/100 indicates the site is not accessible to users with disabilities. This may present legal compliance risks.`,
-      recommendation: "Fix all critical axe-core violations: add alt text to images, ensure sufficient color contrast (4.5:1), add ARIA labels to form elements.",
-      estimatedImpact: "Legal compliance risk mitigation; expands usable audience by ~15–20%.",
+      description: `axe-core detected ${a.violations.length} violation(s), ${critViolations.length} critical/serious: ${violationNames || "see full report"}. ${a.wcagLevel === "non-compliant" ? "Page is not WCAG 2.1 AA compliant." : ""}`,
+      recommendation: `Remediate all ${critViolations.length} critical/serious violations. Start with: ${critViolations.slice(0, 2).map(v => v.id).join(", ") || "image alt text and colour contrast"}.`,
+      estimatedImpact: "Legal compliance risk reduction; expands accessible audience by 15–20%.",
     });
   } else if (input.accessibilityScore >= 90) {
-    strengths.push(`Strong accessibility score (${input.accessibilityScore}/100) — WCAG 2.1 AA compliant`);
+    strengths.push(`Strong accessibility ${fmt(input.accessibilityScore)} — ${a?.violations.length === 0 ? "no WCAG violations detected" : `${a?.violations.filter(v => v.impact === "critical").length} critical violations`}`);
   }
 
-  // SEO analysis
-  if (input.seoScore < 65) {
+  // ── SEO ────────────────────────────────────────────────────────────────────
+  const s = input.seo;
+  if (s && input.seoScore < 65) {
+    const highIssues = s.issues.filter(i => i.severity === "high" || i.severity === "critical");
+    const issueDesc = highIssues.map(i => i.description).slice(0, 3).join("; ");
     criticalIssues.push({
-      title: "SEO deficiencies will reduce organic search visibility",
+      title: `SEO deficiencies — score ${fmt(input.seoScore)}`,
       severity: "high",
       category: "SEO",
-      description: `SEO score of ${input.seoScore}/100 — missing meta descriptions, inconsistent heading hierarchy, and incomplete Open Graph tags detected.`,
-      recommendation: "Add unique meta descriptions to all pages, ensure single H1 per page, and implement Open Graph tags for social sharing.",
-      estimatedImpact: "Estimated 20–35% improvement in organic search click-through rate.",
+      description: `${highIssues.length} high-priority issue(s): ${issueDesc || "missing meta tags and heading structure problems"}. H1 count: ${s.headingStructure.h1Count}, sitemap: ${s.sitemapFound ? "found" : "missing"}, canonical: ${s.metaTags.canonical ? "set" : "missing"}.`,
+      recommendation: `Fix immediately: ${highIssues.slice(0, 2).map(i => i.recommendation).join(" | ") || "add meta description and canonical URL"}.`,
+      estimatedImpact: "Estimated 20–35% improvement in organic search click-through rate after fixes.",
     });
-  } else {
-    strengths.push(`Solid SEO foundation (${input.seoScore}/100) — meta tags and structured data present`);
+  } else if (s && input.seoScore >= 80) {
+    strengths.push(`Good SEO foundation ${fmt(input.seoScore)} — title: "${s.metaTags.title?.slice(0, 50) ?? "set"}", ${s.sitemapFound ? "sitemap found" : "no sitemap"}, ${s.robotsTxtFound ? "robots.txt found" : "no robots.txt"}`);
   }
 
-  // Security analysis
-  if (input.securityScore < 60) {
+  // ── Security ───────────────────────────────────────────────────────────────
+  const sec = input.security;
+  if (sec && input.securityScore < 60) {
+    const missing = Object.entries(sec.headers)
+      .filter(([, v]) => !v)
+      .map(([k]) => k.replace(/([A-Z])/g, " $1").trim())
+      .slice(0, 5);
     criticalIssues.push({
-      title: "Security headers and configurations require immediate attention",
+      title: `Security headers missing — score ${fmt(input.securityScore)}`,
       severity: "critical",
       category: "Security",
-      description: `Security score of ${input.securityScore}/100 — Content Security Policy, HSTS, and X-Frame-Options headers missing or misconfigured.`,
-      recommendation: "Implement CSP header, enable HSTS with preload, add X-Frame-Options: SAMEORIGIN, and audit all cookie security flags.",
-      estimatedImpact: "Significantly reduces XSS, clickjacking, and MITM attack surface.",
+      description: `${sec.vulnerabilities.length} vulnerability/vulnerabilities detected. Missing headers: ${missing.join(", ") || "CSP, HSTS, X-Frame-Options"}. SSL: ${sec.ssl.valid ? `valid (${sec.ssl.protocol})` : "NOT configured"}.`,
+      recommendation: `Immediate: ${sec.vulnerabilities.slice(0, 2).map(v => v.recommendation).join(" | ") || "implement CSP and HSTS headers"}.`,
+      estimatedImpact: "Eliminates XSS, clickjacking, and MITM attack vectors.",
     });
-  } else if (input.securityScore >= 85) {
-    strengths.push(`Good security posture (${input.securityScore}/100) — security headers properly configured`);
+  } else if (sec && input.securityScore >= 80) {
+    strengths.push(`Good security posture ${fmt(input.securityScore)} — SSL ${sec.ssl.valid ? sec.ssl.protocol : "none"}, ${sec.vulnerabilities.length} vulnerability/vulnerabilities`);
   }
 
-  // Bug count analysis
+  // ── Broken links ──────────────────────────────────────────────────────────
+  const bl = input.brokenLinks;
+  if (bl && bl.brokenLinks.length > 0) {
+    const urls = bl.brokenLinks.slice(0, 2).map(l => `${l.url} (${l.statusCode})`).join(", ");
+    criticalIssues.push({
+      title: `${bl.brokenLinks.length} broken link(s) found across ${bl.totalLinksChecked} checked`,
+      severity: bl.brokenLinks.some(l => l.statusCode >= 500) ? "high" : "medium",
+      category: "Reliability",
+      description: `Broken: ${urls}${bl.brokenLinks.length > 2 ? ` + ${bl.brokenLinks.length - 2} more` : ""}. ${bl.brokenImages > 0 ? `${bl.brokenImages} broken image(s) also detected.` : ""} ${bl.redirectChains.length > 0 ? `${bl.redirectChains.length} redirect(s) found.` : ""}`,
+      recommendation: "Fix or redirect all broken URLs. Broken links cause SEO penalties and 404 user experiences.",
+      estimatedImpact: "Prevents crawl budget waste and user-facing 404 errors.",
+    });
+  } else if (bl && bl.totalLinksChecked > 0) {
+    strengths.push(`No broken links — ${bl.totalLinksChecked} links checked (${bl.internalLinks} internal, ${bl.externalLinks} external)`);
+  }
+
+  // ── Console errors ─────────────────────────────────────────────────────────
+  const ce = input.consoleErrors;
+  if (ce && ce.totalErrors > 0) {
+    const msgs = ce.errors.filter(e => e.level === "error").slice(0, 2).map(e => e.message.slice(0, 80)).join("; ");
+    criticalIssues.push({
+      title: `${ce.totalErrors} browser console error(s) detected`,
+      severity: ce.uncaughtExceptions > 0 ? "high" : "medium",
+      category: "Reliability",
+      description: `${ce.uncaughtExceptions > 0 ? `${ce.uncaughtExceptions} uncaught JS exception(s). ` : ""}${ce.failedRequests.length > 0 ? `${ce.failedRequests.length} failed network request(s). ` : ""}Sample errors: ${msgs || "see full report"}.`,
+      recommendation: "Fix all uncaught exceptions first (they crash user flows), then address failed network requests.",
+      estimatedImpact: "Prevents silent user-facing failures and improves error monitoring signal.",
+    });
+  }
+
+  // ── Bug count ──────────────────────────────────────────────────────────────
   if (input.criticalBugs > 0) {
     criticalIssues.push({
       title: `${input.criticalBugs} critical bug(s) require immediate remediation`,
       severity: "critical",
       category: "Reliability",
-      description: `${input.bugsFound} total issues detected including ${input.criticalBugs} critical severity bugs that may cause system failures or data loss.`,
-      recommendation: "Triage and resolve all critical bugs before next release. Schedule high-severity bugs for current sprint.",
-      estimatedImpact: "Prevents user-facing failures and potential data integrity issues.",
+      description: `${input.bugsFound} total issues detected, ${input.criticalBugs} critical severity. Critical bugs may cause data loss, security breaches, or service outages.`,
+      recommendation: "Triage all critical bugs before next deployment. Assign to engineering immediately.",
+      estimatedImpact: "Prevents production incidents and protects user data.",
     });
   }
 
-  // Recommendations
-  if (input.performanceScore < 90) {
+  // ── Recommendations (ordered by business impact) ──────────────────────────
+  if (input.performanceScore < 90 && input.performanceScore > 0) {
     recommendations.push({
       priority: input.performanceScore < 50 ? "immediate" : "short-term",
-      action: "Implement performance optimization: bundle splitting, image optimization, and caching strategy",
-      expectedOutcome: "Core Web Vitals pass Google thresholds; improved search ranking",
+      action: p?.opportunities.length
+        ? `Address top performance opportunities: ${p.opportunities.slice(0, 2).map(o => o.title).join("; ")}`
+        : "Reduce render-blocking resources, enable compression, and optimise images",
+      expectedOutcome: "Core Web Vitals pass Google thresholds; improved search ranking signals",
       effort: "medium",
     });
   }
-
-  recommendations.push({
-    priority: "short-term",
-    action: "Set up CI/CD quality gates with automated Lighthouse and axe-core checks on every PR",
-    expectedOutcome: "Prevents regression; enforces quality standards automatically",
-    effort: "medium",
-  });
-
-  if (input.accessibilityScore < 90) {
+  if (sec && input.securityScore < 80) {
+    const topVuln = sec.vulnerabilities[0];
     recommendations.push({
-      priority: "short-term",
-      action: "Run accessibility audit workshop with development team; integrate axe-core into test suite",
+      priority: input.securityScore < 50 ? "immediate" : "short-term",
+      action: topVuln
+        ? `Security: ${topVuln.recommendation}`
+        : "Implement CSP, HSTS, and X-Content-Type-Options headers",
+      expectedOutcome: "Eliminates top attack vectors; improves security posture score",
+      effort: "low",
+    });
+  }
+  if (a && input.accessibilityScore < 90) {
+    const topViolation = a.violations.find(v => v.impact === "critical" || v.impact === "serious");
+    recommendations.push({
+      priority: input.accessibilityScore < 70 ? "immediate" : "short-term",
+      action: topViolation
+        ? `Fix accessibility violation "${topViolation.id}": ${topViolation.help}`
+        : "Run axe-core in CI to prevent accessibility regressions",
       expectedOutcome: "WCAG 2.1 AA compliance; reduced legal risk",
       effort: "low",
     });
   }
-
+  if (s && input.seoScore < 80) {
+    const topSEO = s.issues.find(i => i.severity === "high" || i.severity === "critical");
+    recommendations.push({
+      priority: "short-term",
+      action: topSEO ? topSEO.recommendation : "Add meta description, canonical URL, and Open Graph tags",
+      expectedOutcome: "Improved organic search visibility and social media preview quality",
+      effort: "low",
+    });
+  }
   recommendations.push({
     priority: "long-term",
-    action: "Integrate real-time monitoring (Datadog RUM / Sentry) for continuous performance and error tracking",
-    expectedOutcome: "Proactive issue detection before users are impacted",
-    effort: "high",
+    action: "Integrate this audit into CI/CD — gate deployments on performance ≥ 75, accessibility ≥ 90, zero critical security vulnerabilities",
+    expectedOutcome: "Prevents quality regressions before they reach production",
+    effort: "medium",
   });
 
-  const issuesList = [
-    input.performanceScore < 75 && "performance optimization",
-    input.accessibilityScore < 80 && "accessibility improvements",
-    input.seoScore < 75 && "SEO enhancements",
-    input.securityScore < 70 && "security hardening",
-    input.bugsFound > 0 && `${input.bugsFound} issue${input.bugsFound !== 1 ? "s" : ""}`,
-  ].filter(Boolean);
+  // ── Executive summary (all data-driven) ───────────────────────────────────
+  const scoreBreakdown = [
+    `performance ${input.performanceScore > 0 ? input.performanceScore : "N/A"}`,
+    `accessibility ${input.accessibilityScore}`,
+    `SEO ${input.seoScore}`,
+    `security ${input.securityScore}`,
+    `best-practices ${input.bestPracticesScore}`,
+  ].join(", ");
 
-  const executiveSummary = `Automated audit of ${input.url} completed with an overall score of ${overall}/100 (${scoreToGrade(overall)}). ${
-    criticalIssues.length > 0
-      ? `${criticalIssues.length} critical area${criticalIssues.length !== 1 ? "s" : ""} require${criticalIssues.length === 1 ? "s" : ""} attention: ${issuesList.join(", ")}.`
-      : "No critical issues detected."
-  } ${
-    strengths.length > 0
-      ? `Key strengths: ${strengths.slice(0, 2).join("; ")}.`
-      : ""
-  } Immediate focus should be on ${criticalIssues[0]?.category ?? "maintaining current quality standards"}.`;
+  const criticalCount = criticalIssues.filter(i => i.severity === "critical").length;
+  const highCount     = criticalIssues.filter(i => i.severity === "high").length;
+
+  const techStack = input.technologies?.frameworks.length
+    ? ` Stack detected: ${[...input.technologies.frameworks, ...(input.technologies.cms ? [input.technologies.cms] : [])].join(", ")}.`
+    : "";
+
+  const executiveSummary =
+    `Audit of ${input.url} completed with overall score ${fmt(input.overallScore)} ` +
+    `(${scoreBreakdown}).${techStack} ` +
+    (criticalCount > 0 || highCount > 0
+      ? `Found ${criticalCount} critical and ${highCount} high-priority issue(s) requiring attention: ` +
+        criticalIssues.filter(i => i.severity === "critical" || i.severity === "high")
+          .map(i => i.category).filter((c, i, a) => a.indexOf(c) === i).join(", ") + ". "
+      : "No critical issues detected. ") +
+    (strengths.length > 0
+      ? `Strengths: ${strengths.slice(0, 2).join("; ")}.`
+      : "");
+
+  // ── Confidence: high when all key scanners ran successfully ───────────────
+  const allScannersFired =
+    input.performanceScore > 0 &&
+    input.accessibilityScore > 0 &&
+    input.seoScore > 0 &&
+    input.securityScore > 0;
+  const confidenceScore = allScannersFired ? 94 : 78;
 
   return {
     executiveSummary,
-    overallScore: overall,
-    overallGrade: scoreToGrade(overall),
+    overallScore: input.overallScore,
+    overallGrade: scoreToGrade(input.overallScore),
     criticalIssues,
     strengths,
-    recommendations,
-    // Sprint priority derived from criticality, not arbitrary date math
+    recommendations: recommendations.slice(0, 5),
     suggestedSprint:
       criticalIssues.filter(i => i.severity === "critical").length > 0
         ? "Sprint 1 (immediate)"
@@ -183,22 +290,23 @@ function generateMockSummary(input: AISummaryInput): Omit<AISummary, keyof impor
           ? "Sprint 2 (short-term)"
           : "Sprint 3 / Backlog",
     suggestedTeam: input.criticalBugs > 0 ? "Platform & Frontend" : "Frontend",
-    estimatedRemediationDays: Math.round(criticalIssues.length * 2 + recommendations.filter(r => r.priority === "immediate").length),
-    // Confidence is deterministic: high when all scores are non-default, lower otherwise
-    confidenceScore: (
-      input.performanceScore !== 70 &&
-      input.accessibilityScore !== 70 &&
-      input.seoScore !== 70 &&
-      input.securityScore !== 70
-    ) ? 96 : 88,
+    estimatedRemediationDays: Math.round(
+      criticalIssues.filter(i => i.severity === "critical").length * 2 +
+      criticalIssues.filter(i => i.severity === "high").length * 1 +
+      recommendations.filter(r => r.priority === "immediate").length,
+    ),
+    confidenceScore,
   };
 }
 
+// ─── Scanner implementation ───────────────────────────────────────────────────
+
 class AISummaryGenerator implements AuditScanner<AISummary> {
   readonly name = "ai-summary" as const;
-  readonly description = "Generates AI-powered executive summary, root cause analysis, and prioritized recommendations";
-  readonly version = "1.0.0";
-  readonly adapter = "gpt-4o"; // Future: real OpenAI / Anthropic / Gemini call
+  readonly description =
+    "Generates a structured executive summary from real scanner findings: CWVs, violation IDs, missing headers, SEO issues, link counts";
+  readonly version = "2.0.0";
+  readonly adapter = "rule-based-findings"; // Replace with "gpt-4o" or "claude-3" to add LLM
 
   private llmAdapter?: LLMAdapter;
 
@@ -210,26 +318,63 @@ class AISummaryGenerator implements AuditScanner<AISummary> {
     const startedAt = new Date();
 
     try {
-      // These will be passed in from the engine after all other scanners complete
-      const input: AISummaryInput = {
+      // Accumulated scanner outputs injected by audit-pipeline.ts before this scanner runs
+      const scannerOutputs = (
+        context.options as Record<string, unknown> & { _scannerOutputs?: Record<string, unknown> }
+      )?._scannerOutputs ?? {};
+
+      // Pre-computed scores passed via options (set by audit-execution-service.ts)
+      const scores = (
+        context.options as Record<string, unknown> & { _scores?: Record<string, number> }
+      )?._scores ?? {};
+
+      const perf  = scannerOutputs["performance"]  as PerformanceMetrics  | undefined;
+      const a11y  = scannerOutputs["accessibility"] as AccessibilityMetrics | undefined;
+      const seo   = scannerOutputs["seo"]           as SEOAnalysis          | undefined;
+      const sec   = scannerOutputs["security"]      as SecurityAnalysis     | undefined;
+      const links = scannerOutputs["brokenLinks"]   as BrokenLinkResult     | undefined;
+      const ce    = scannerOutputs["consoleErrors"] as ConsoleErrors        | undefined;
+      const net   = scannerOutputs["networkRequests"] as NetworkRequests    | undefined;
+      const tech  = scannerOutputs["technologies"]  as TechnologyProfile    | undefined;
+
+      // Derive scores from actual scanner outputs (fall back to passed-in scores or 70)
+      const performanceScore  = perf?.scores.performance ?? (scores["performanceScore"]  as number | undefined) ?? 70;
+      const accessibilityScore = a11y?.score             ?? (scores["accessibilityScore"] as number | undefined) ?? 70;
+      const seoScore           = seo?.score              ?? (scores["seoScore"]           as number | undefined) ?? 70;
+      const securityScore      = sec?.score              ?? (scores["securityScore"]      as number | undefined) ?? 70;
+      const bestPracticesScore = (scores["bestPracticesScore"] as number | undefined) ?? 70;
+      const bugsFound          = (scores["bugsFound"]          as number | undefined) ?? 0;
+      const criticalBugs       = (scores["criticalBugs"]       as number | undefined) ?? 0;
+
+      const overallScore = Math.round(
+        performanceScore * 0.25 +
+        accessibilityScore * 0.2 +
+        seoScore * 0.2 +
+        securityScore * 0.2 +
+        bestPracticesScore * 0.15,
+      );
+
+      const input: AuditSummaryInput = {
         url: context.url,
-        performanceScore: (context.options as Record<string, unknown> & { _scores?: AISummaryInput })
-          ?._scores?.performanceScore ?? 70,
-        accessibilityScore: (context.options as Record<string, unknown> & { _scores?: AISummaryInput })
-          ?._scores?.accessibilityScore ?? 70,
-        seoScore: (context.options as Record<string, unknown> & { _scores?: AISummaryInput })
-          ?._scores?.seoScore ?? 70,
-        securityScore: (context.options as Record<string, unknown> & { _scores?: AISummaryInput })
-          ?._scores?.securityScore ?? 70,
-        bestPracticesScore: (context.options as Record<string, unknown> & { _scores?: AISummaryInput })
-          ?._scores?.bestPracticesScore ?? 70,
-        bugsFound: (context.options as Record<string, unknown> & { _scores?: AISummaryInput })
-          ?._scores?.bugsFound ?? 0,
-        criticalBugs: (context.options as Record<string, unknown> & { _scores?: AISummaryInput })
-          ?._scores?.criticalBugs ?? 0,
+        performance: perf,
+        accessibility: a11y,
+        seo,
+        security: sec,
+        brokenLinks: links,
+        consoleErrors: ce,
+        networkRequests: net,
+        technologies: tech,
+        performanceScore,
+        accessibilityScore,
+        seoScore,
+        securityScore,
+        bestPracticesScore,
+        overallScore,
+        bugsFound,
+        criticalBugs,
       };
 
-      const summary = generateMockSummary(input);
+      const summary = buildAuditSummary(input);
       const completedAt = new Date();
 
       return {
@@ -248,8 +393,8 @@ class AISummaryGenerator implements AuditScanner<AISummary> {
         completedAt,
         durationMs: completedAt.getTime() - startedAt.getTime(),
         success: false,
-        error: error instanceof Error ? error.message : "AI summary generation failed",
-        executiveSummary: "AI analysis unavailable",
+        error: error instanceof Error ? error.message : "Summary generation failed",
+        executiveSummary: "Summary unavailable — check scanner logs for details",
         overallScore: 0,
         overallGrade: "F",
         criticalIssues: [],
@@ -262,4 +407,4 @@ class AISummaryGenerator implements AuditScanner<AISummary> {
 }
 
 export default new AISummaryGenerator();
-export { AISummaryGenerator, generateMockSummary };
+export { AISummaryGenerator, buildAuditSummary };

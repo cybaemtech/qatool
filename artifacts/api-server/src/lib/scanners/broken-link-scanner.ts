@@ -1,9 +1,11 @@
 // ─── Broken Link Scanner ──────────────────────────────────────────────────────
-// Real implementation: fetches the target page, extracts all <a href> links,
-// then HEAD-checks each one with a concurrency limit. No browser required.
+// Uses Playwright to extract all <a href> and <img src> links from the fully
+// rendered DOM (handles JS-rendered pages), then HEAD-checks each URL
+// concurrently. Reports total/internal/external counts, broken links,
+// redirect chains, and broken images.
 
-import * as cheerio from "cheerio";
 import type { AuditScanner, AuditContext, BrokenLinkResult } from "../audit-types";
+import { withPage } from "./playwright-browser";
 
 export interface BrokenLinkAdapter {
   crawl(url: string, options?: { maxLinks?: number; timeout?: number }): Promise<{
@@ -13,55 +15,85 @@ export interface BrokenLinkAdapter {
       foundOn: string;
       linkText?: string;
       isExternal: boolean;
+      isImage: boolean;
       redirectTo?: string;
     }>;
   }>;
 }
 
-// ─── Real HTTP crawler ─────────────────────────────────────────────────────────
+// ─── Real crawler: Playwright extraction + concurrent HEAD checks ─────────────
 
 const realBrokenLinkAdapter: BrokenLinkAdapter = {
   async crawl(pageUrl, options = {}) {
-    const maxLinks = options.maxLinks ?? 50;
+    const maxLinks = options.maxLinks ?? 60;
     const timeoutMs = options.timeout ?? 8000;
     const origin = new URL(pageUrl).origin;
 
-    // ── Step 1: Fetch the target page and extract all links ──────────────────
-    let html = "";
+    // ── Step 1: Navigate and extract links from rendered DOM via Playwright ───
+    let rawLinks: Array<{ href: string; text: string; isImage: boolean }> = [];
+
     try {
-      const res = await fetch(pageUrl, {
-        signal: AbortSignal.timeout(15000),
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; QAPortalBot/1.0)",
-          "Accept": "text/html,*/*;q=0.8",
-        },
-        redirect: "follow",
-      });
-      html = await res.text();
+      rawLinks = await withPage(async (page) => {
+        await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 25000 });
+        // Wait for JS frameworks to render links
+        await page.waitForTimeout(1500);
+
+        return page.evaluate(() => {
+          const results: Array<{ href: string; text: string; isImage: boolean }> = [];
+
+          // Anchor links
+          document.querySelectorAll("a[href]").forEach(el => {
+            const href = el.getAttribute("href")?.trim();
+            const text = (el.textContent ?? "").trim().slice(0, 100);
+            if (href) results.push({ href, text, isImage: false });
+          });
+
+          // Image sources
+          document.querySelectorAll("img[src]").forEach(el => {
+            const src = el.getAttribute("src")?.trim();
+            if (src) results.push({ href: src, text: el.getAttribute("alt") ?? "", isImage: true });
+          });
+
+          return results;
+        });
+      }, { timeoutMs: 35000 });
     } catch {
-      return { links: [] };
+      // Playwright unavailable — fall back to fetch + static HTML parse
+      try {
+        const { load } = await import("cheerio");
+        const res = await fetch(pageUrl, {
+          signal: AbortSignal.timeout(15000),
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; QAPortalBot/1.0)", "Accept": "text/html,*/*" },
+          redirect: "follow",
+        });
+        const html = await res.text();
+        const $ = load(html);
+        $("a[href]").each((_, el) => {
+          const href = $(el).attr("href")?.trim();
+          const text = ($(el).text() ?? "").trim().slice(0, 100);
+          if (href) rawLinks.push({ href, text, isImage: false });
+        });
+        $("img[src]").each((_, el) => {
+          const src = $(el).attr("src")?.trim();
+          if (src) rawLinks.push({ href: src, text: $(el).attr("alt") ?? "", isImage: true });
+        });
+      } catch {
+        return { links: [] };
+      }
     }
-
-    const $ = cheerio.load(html);
-    const rawLinks: Array<{ href: string; text: string }> = [];
-
-    $("a[href]").each((_, el) => {
-      const href = $(el).attr("href")?.trim();
-      const text = $(el).text().trim().slice(0, 100);
-      if (href) rawLinks.push({ href, text });
-    });
 
     // ── Step 2: Resolve and de-duplicate URLs ────────────────────────────────
     const seen = new Set<string>();
-    const resolved: Array<{ url: string; text: string; isExternal: boolean }> = [];
+    const resolved: Array<{ url: string; text: string; isExternal: boolean; isImage: boolean }> = [];
 
-    for (const { href, text } of rawLinks) {
+    for (const { href, text, isImage } of rawLinks) {
       if (resolved.length >= maxLinks) break;
       if (
         href.startsWith("#") ||
         href.startsWith("mailto:") ||
         href.startsWith("tel:") ||
-        href.startsWith("javascript:")
+        href.startsWith("javascript:") ||
+        href.startsWith("data:")
       ) continue;
 
       let fullUrl: string;
@@ -70,45 +102,47 @@ const realBrokenLinkAdapter: BrokenLinkAdapter = {
       } catch {
         continue;
       }
-      if (seen.has(fullUrl)) continue;
-      seen.add(fullUrl);
+
+      // Normalise hash fragments
+      const urlKey = fullUrl.split("#")[0];
+      if (seen.has(urlKey)) continue;
+      seen.add(urlKey);
 
       resolved.push({
         url: fullUrl,
         text,
         isExternal: !fullUrl.startsWith(origin),
+        isImage,
       });
     }
 
-    // ── Step 3: Check each link with concurrency limit of 8 ─────────────────
-    const CONCURRENCY = 8;
+    // ── Step 3: HEAD-check each URL concurrently (batches of 10) ─────────────
+    const CONCURRENCY = 10;
     const results: Array<{
       url: string;
       statusCode: number;
       foundOn: string;
       linkText?: string;
       isExternal: boolean;
+      isImage: boolean;
       redirectTo?: string;
     }> = [];
 
     for (let i = 0; i < resolved.length; i += CONCURRENCY) {
       const batch = resolved.slice(i, i + CONCURRENCY);
       const batchResults = await Promise.all(
-        batch.map(async ({ url, text, isExternal }) => {
+        batch.map(async ({ url, text, isExternal, isImage }) => {
           try {
-            // Try HEAD first (faster), fall back to GET for servers that don't support HEAD
+            // HEAD first (faster); fall back to GET with Range if HEAD fails
             let res: Response | null = null;
             try {
               res = await fetch(url, {
                 method: "HEAD",
                 signal: AbortSignal.timeout(timeoutMs),
-                headers: {
-                  "User-Agent": "Mozilla/5.0 (compatible; QAPortalBot/1.0)",
-                },
+                headers: { "User-Agent": "Mozilla/5.0 (compatible; QAPortalBot/1.0)" },
                 redirect: "follow",
               });
             } catch {
-              // HEAD might fail on some servers; try GET with small response
               res = await fetch(url, {
                 method: "GET",
                 signal: AbortSignal.timeout(timeoutMs),
@@ -120,20 +154,9 @@ const realBrokenLinkAdapter: BrokenLinkAdapter = {
               });
             }
 
-            // Detect redirects
-            let redirectTo: string | undefined;
-            if (res.redirected && res.url !== url) {
-              redirectTo = res.url;
-            }
+            const redirectTo = res.redirected && res.url !== url ? res.url : undefined;
 
-            return {
-              url,
-              statusCode: res.status,
-              foundOn: pageUrl,
-              linkText: text || undefined,
-              isExternal,
-              redirectTo,
-            };
+            return { url, statusCode: res.status, foundOn: pageUrl, linkText: text || undefined, isExternal, isImage, redirectTo };
           } catch (err) {
             const isTimeout =
               err instanceof Error &&
@@ -144,6 +167,7 @@ const realBrokenLinkAdapter: BrokenLinkAdapter = {
               foundOn: pageUrl,
               linkText: text || undefined,
               isExternal,
+              isImage,
             };
           }
         }),
@@ -157,9 +181,10 @@ const realBrokenLinkAdapter: BrokenLinkAdapter = {
 
 class BrokenLinkScanner implements AuditScanner<BrokenLinkResult> {
   readonly name = "broken-links" as const;
-  readonly description = "Crawls the page and HEAD-checks every link for broken/redirected URLs";
-  readonly version = "2.0.0";
-  readonly adapter = "real-http-crawl";
+  readonly description =
+    "Playwright-based crawler: extracts all links and images from the rendered DOM, then HEAD-checks each URL for broken/redirected resources";
+  readonly version = "3.0.0";
+  readonly adapter = "playwright-extract-http-check";
 
   private crawlerAdapter: BrokenLinkAdapter;
 
@@ -169,7 +194,7 @@ class BrokenLinkScanner implements AuditScanner<BrokenLinkResult> {
 
   async run(context: AuditContext): Promise<BrokenLinkResult> {
     const startedAt = new Date();
-    const maxLinks = context.options?.maxLinksToCheck ?? 50;
+    const maxLinks = context.options?.maxLinksToCheck ?? 60;
 
     try {
       const { links } = await this.crawlerAdapter.crawl(context.url, {
@@ -177,17 +202,20 @@ class BrokenLinkScanner implements AuditScanner<BrokenLinkResult> {
         timeout: 8000,
       });
 
-      const internalLinks = links.filter(l => !l.isExternal).length;
-      const externalLinks = links.filter(l => l.isExternal).length;
+      const anchorLinks = links.filter(l => !l.isImage);
+      const imageLinks  = links.filter(l => l.isImage);
 
-      // Broken = 4xx, 5xx, timeout (0), or connection error (-1)
-      const brokenLinks: BrokenLinkResult["brokenLinks"] = links
+      const internalLinks = anchorLinks.filter(l => !l.isExternal).length;
+      const externalLinks = anchorLinks.filter(l => l.isExternal).length;
+
+      // Broken = 4xx, 5xx, network timeout (0), or connection error (-1)
+      const brokenLinks: BrokenLinkResult["brokenLinks"] = anchorLinks
         .filter(l => l.statusCode === 0 || l.statusCode === -1 || l.statusCode >= 400)
         .map(l => {
           let errorType: "404" | "500" | "timeout" | "ssl-error" | "dns-error" | undefined;
           if (l.statusCode === 0 || l.statusCode === -1) errorType = "timeout";
-          else if (l.statusCode === 404) errorType = "404";
-          else if (l.statusCode >= 500) errorType = "500";
+          else if (l.statusCode === 404)    errorType = "404";
+          else if (l.statusCode >= 500)     errorType = "500";
           return {
             url: l.url,
             statusCode: l.statusCode,
@@ -197,7 +225,12 @@ class BrokenLinkScanner implements AuditScanner<BrokenLinkResult> {
           };
         });
 
-      // Redirects (3xx or redirected flag from fetch)
+      // Broken images (img src that returns 4xx/5xx/timeout)
+      const brokenImages = imageLinks.filter(
+        l => l.statusCode === 0 || l.statusCode === -1 || l.statusCode >= 400,
+      ).length;
+
+      // Redirect chains — URLs where fetch followed a redirect
       const redirectChains: BrokenLinkResult["redirectChains"] = links
         .filter(l => l.redirectTo)
         .map(l => ({
@@ -214,12 +247,12 @@ class BrokenLinkScanner implements AuditScanner<BrokenLinkResult> {
         completedAt,
         durationMs: completedAt.getTime() - startedAt.getTime(),
         success: true,
-        totalLinksChecked: links.length,
+        totalLinksChecked: anchorLinks.length,
         brokenLinks,
         redirectChains,
         externalLinks,
         internalLinks,
-        brokenImages: 0, // Would need browser to detect broken <img> resources
+        brokenImages,
       };
     } catch (error) {
       const completedAt = new Date();

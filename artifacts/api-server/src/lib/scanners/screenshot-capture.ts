@@ -1,6 +1,7 @@
 // ─── Screenshot Capture ───────────────────────────────────────────────────────
-// Real implementation using Playwright to capture full-page and viewport
-// screenshots across desktop, tablet, and mobile breakpoints.
+// Uses Playwright to capture viewport and full-page screenshots across
+// desktop, tablet, and mobile breakpoints.
+// Stores real metadata: actual page dimensions, capture timestamp, file size.
 
 import type { AuditScanner, AuditContext, ScreenshotResult } from "../audit-types";
 import { withPage } from "./playwright-browser";
@@ -14,6 +15,9 @@ export interface ScreenshotAdapter {
     dataUrl: string;
     fileSizeBytes: number;
     format: "webp" | "png" | "jpeg";
+    pageWidth: number;
+    pageHeight: number;
+    captureTimeMs: number;
   }>;
 }
 
@@ -23,7 +27,7 @@ const VIEWPORTS = {
   mobile:  { width: 390,  height: 844  },
 } as const;
 
-// ─── Real adapter: Playwright screenshots ────────────────────────────────────
+// ─── Real adapter ─────────────────────────────────────────────────────────────
 
 const realScreenshotAdapter: ScreenshotAdapter = {
   async capture(url, options) {
@@ -31,31 +35,43 @@ const realScreenshotAdapter: ScreenshotAdapter = {
       async (page) => {
         await page.setViewportSize(options.viewport);
         await page.goto(url, { waitUntil: "domcontentloaded", timeout: 25000 });
-        // Give JS a moment to render
+        // Allow JS frameworks to finish rendering
         await page.waitForTimeout(1500);
 
+        // Measure actual page dimensions
+        const pageDimensions = await page.evaluate(() => ({
+          pageWidth:  Math.max(document.body.scrollWidth,  document.documentElement.scrollWidth),
+          pageHeight: Math.max(document.body.scrollHeight, document.documentElement.scrollHeight),
+        }));
+
+        const captureStart = Date.now();
         const buffer = await page.screenshot({
           type: "jpeg",
           quality: 80,
           fullPage: options.fullPage ?? false,
         });
+        const captureTimeMs = Date.now() - captureStart;
 
         const dataUrl = "data:image/jpeg;base64," + buffer.toString("base64");
         return {
           dataUrl,
           fileSizeBytes: buffer.length,
           format: "jpeg" as const,
+          pageWidth:  pageDimensions.pageWidth,
+          pageHeight: pageDimensions.pageHeight,
+          captureTimeMs,
         };
       },
-      { timeoutMs: 30000 },
+      { timeoutMs: 35000 },
     );
   },
 };
 
 class ScreenshotCapture implements AuditScanner<ScreenshotResult> {
   readonly name = "screenshot" as const;
-  readonly description = "Captures screenshots across desktop, tablet, and mobile viewports using Playwright";
-  readonly version = "2.0.0";
+  readonly description =
+    "Playwright screenshots: desktop, tablet, mobile viewports + full-page; stores real dimensions and capture metadata";
+  readonly version = "3.0.0";
   readonly adapter = "playwright";
 
   private screenshotAdapter: ScreenshotAdapter;
@@ -88,8 +104,8 @@ class ScreenshotCapture implements AuditScanner<ScreenshotResult> {
         });
       }
 
-      // Full-page desktop screenshot
-      const fullPage = await this.screenshotAdapter.capture(context.url, {
+      // Full-page desktop screenshot — uses real page height for dimensions
+      const fullPageCapture = await this.screenshotAdapter.capture(context.url, {
         viewport: VIEWPORTS.desktop,
         deviceType: "desktop",
         fullPage: true,
@@ -104,10 +120,10 @@ class ScreenshotCapture implements AuditScanner<ScreenshotResult> {
         success: true,
         screenshots,
         fullPageScreenshot: {
-          dataUrl: fullPage.dataUrl,
+          dataUrl: fullPageCapture.dataUrl,
           dimensions: {
-            width: VIEWPORTS.desktop.width,
-            height: VIEWPORTS.desktop.height * 3,
+            width:  fullPageCapture.pageWidth  || VIEWPORTS.desktop.width,
+            height: fullPageCapture.pageHeight || VIEWPORTS.desktop.height,
           },
         },
       };

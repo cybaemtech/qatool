@@ -1,14 +1,16 @@
 // ─── Security Scanner ─────────────────────────────────────────────────────────
-// Real implementation using built-in fetch to inspect HTTP response headers,
-// SSL presence, cookie flags, and CORS policy.
-// No browser required.
+// Real implementation: inspects HTTP response headers, TLS presence, CORS,
+// cookie flags, and Referrer/Permissions Policy.
+// Reports exact missing headers and their expected values.
 
 import type { AuditScanner, AuditContext, SecurityAnalysis } from "../audit-types";
 
 export interface SecurityHeadersAdapter {
   analyze(url: string): Promise<{
+    rawScore: number;
     grade: string;
-    headers: Record<string, string | null>;
+    presentHeaders: Record<string, string>;   // header name → actual value
+    missingHeaders: string[];                  // list of expected-but-absent headers
     ssl: {
       valid: boolean;
       expiry: Date;
@@ -18,66 +20,66 @@ export interface SecurityHeadersAdapter {
   }>;
 }
 
-const KNOWN_VULNERABILITIES = [
-  {
-    id: "csp-missing",
+// ─── Vulnerability catalogue ─────────────────────────────────────────────────
+
+const VULNS = {
+  "csp-missing": {
     severity: "high" as const,
-    title: "Content Security Policy not configured",
-    description: "No Content-Security-Policy header found. This leaves the application vulnerable to XSS attacks.",
-    recommendation: "Implement a strict Content-Security-Policy header that restricts allowed script, style, and media sources.",
+    title: "Content-Security-Policy header not set",
+    description: "No Content-Security-Policy header was returned. Without CSP the browser permits inline scripts and arbitrary external resources, leaving the page open to XSS attacks.",
+    recommendation: "Add a strict CSP: default-src 'self'; script-src 'self' <trusted-origins>; object-src 'none'; base-uri 'self'",
   },
-  {
-    id: "hsts-missing",
+  "hsts-missing": {
     severity: "medium" as const,
-    title: "HTTP Strict Transport Security (HSTS) not set",
-    description: "HSTS header is missing, allowing potential downgrade attacks from HTTPS to HTTP.",
-    recommendation: "Add Strict-Transport-Security header with a max-age of at least 31536000 seconds.",
+    title: "Strict-Transport-Security (HSTS) header absent",
+    description: "HSTS header is missing. Clients may attempt plain HTTP connections, enabling MITM downgrade attacks.",
+    recommendation: "Add: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload",
   },
-  {
-    id: "x-frame-missing",
+  "x-frame-missing": {
     severity: "medium" as const,
-    title: "Clickjacking protection missing",
-    description: "X-Frame-Options header is not set, allowing the page to be embedded in iframes by malicious sites.",
-    recommendation: "Add X-Frame-Options: DENY or SAMEORIGIN to prevent clickjacking attacks.",
+    title: "Clickjacking protection not configured",
+    description: "Neither X-Frame-Options nor a CSP frame-ancestors directive was found. The page can be embedded in an iframe on any domain.",
+    recommendation: "Add X-Frame-Options: SAMEORIGIN or include frame-ancestors 'self' in your CSP.",
   },
-  {
-    id: "cors-wildcard",
-    severity: "high" as const,
-    title: "Overly permissive CORS policy",
-    description: "Access-Control-Allow-Origin: * detected on sensitive endpoints, allowing any origin to make cross-site requests.",
-    recommendation: "Restrict CORS to specific trusted origins and avoid wildcard origins on authenticated endpoints.",
-  },
-  {
-    id: "sri-missing",
-    severity: "low" as const,
-    title: "Subresource Integrity (SRI) not used",
-    description: "Third-party scripts are loaded without Subresource Integrity hashes, risking supply chain attacks.",
-    recommendation: "Add integrity and crossorigin attributes to all third-party <script> and <link> tags.",
-  },
-  {
-    id: "cookie-insecure",
-    severity: "medium" as const,
-    title: "Session cookies missing security flags",
-    description: "Cookies set without HttpOnly and Secure flags may be accessible via JavaScript or sent over HTTP.",
-    recommendation: "Set HttpOnly, Secure, and SameSite=Strict on all session and authentication cookies.",
-  },
-  {
-    id: "mixed-content",
-    severity: "high" as const,
-    title: "Site served over HTTP — no TLS encryption",
-    description: "Page is loaded over plain HTTP. All data is transmitted unencrypted.",
-    recommendation: "Configure HTTPS with a valid TLS certificate and redirect all HTTP traffic to HTTPS.",
-  },
-  {
-    id: "xcto-missing",
+  "xcto-missing": {
     severity: "medium" as const,
     title: "X-Content-Type-Options header missing",
-    description: "Without X-Content-Type-Options: nosniff, browsers may interpret files as a different MIME type.",
-    recommendation: "Add X-Content-Type-Options: nosniff to all responses.",
+    description: "Without X-Content-Type-Options: nosniff browsers may MIME-sniff responses and execute non-script content as scripts.",
+    recommendation: "Add: X-Content-Type-Options: nosniff to all responses.",
   },
-];
+  "referrer-missing": {
+    severity: "low" as const,
+    title: "Referrer-Policy header absent",
+    description: "No Referrer-Policy header set. The browser default may leak full URLs (including query strings) to third parties.",
+    recommendation: "Add: Referrer-Policy: strict-origin-when-cross-origin",
+  },
+  "permissions-missing": {
+    severity: "low" as const,
+    title: "Permissions-Policy header not set",
+    description: "No Permissions-Policy header. Third-party iframes may access sensitive browser APIs (camera, microphone, geolocation) without restriction.",
+    recommendation: "Add: Permissions-Policy: camera=(), microphone=(), geolocation=(self), interest-cohort=()",
+  },
+  "cors-wildcard": {
+    severity: "high" as const,
+    title: "CORS wildcard (Access-Control-Allow-Origin: *) detected",
+    description: "Any origin can make credentialed cross-site requests to this server. This is dangerous on authenticated endpoints.",
+    recommendation: "Restrict CORS to specific trusted origins. Remove * and list allowed domains explicitly.",
+  },
+  "no-https": {
+    severity: "critical" as const,
+    title: "Site served over plain HTTP — no TLS encryption",
+    description: "All data transmitted between browser and server is unencrypted. Credentials and session tokens are exposed in transit.",
+    recommendation: "Obtain a TLS certificate (Let's Encrypt is free) and redirect all HTTP traffic to HTTPS.",
+  },
+  "cookie-insecure": {
+    severity: "medium" as const,
+    title: "Session cookies missing security flags",
+    description: "Cookies were set without one or more of: HttpOnly, Secure, SameSite. These flags prevent JavaScript access and cross-site transmission.",
+    recommendation: "Set-Cookie: <name>=<value>; HttpOnly; Secure; SameSite=Strict (or Lax for OAuth flows)",
+  },
+};
 
-// ─── Real adapter: inspects HTTP headers from actual server response ──────────
+// ─── Real adapter ─────────────────────────────────────────────────────────────
 
 const realSecurityAdapter: SecurityHeadersAdapter = {
   async analyze(url) {
@@ -94,56 +96,70 @@ const realSecurityAdapter: SecurityHeadersAdapter = {
         redirect: "follow",
       });
 
-      const h = res.headers;
       const isHttps = new URL(url).protocol === "https:";
+      const h = res.headers;
 
-      const headers: Record<string, string | null> = {
-        "content-security-policy": h.get("content-security-policy"),
-        "strict-transport-security": h.get("strict-transport-security"),
-        "x-frame-options": h.get("x-frame-options"),
-        "x-content-type-options": h.get("x-content-type-options"),
-        "referrer-policy": h.get("referrer-policy"),
-        "permissions-policy": h.get("permissions-policy") ?? h.get("feature-policy"),
-        "cross-origin-embedder-policy": h.get("cross-origin-embedder-policy"),
-        "cross-origin-opener-policy": h.get("cross-origin-opener-policy"),
-        "access-control-allow-origin": h.get("access-control-allow-origin"),
-        "set-cookie": h.get("set-cookie"),
-        "server": h.get("server"),
-        "x-powered-by": h.get("x-powered-by"),
-      };
+      const SECURITY_HEADERS = [
+        "content-security-policy",
+        "strict-transport-security",
+        "x-frame-options",
+        "x-content-type-options",
+        "referrer-policy",
+        "permissions-policy",
+        "cross-origin-embedder-policy",
+        "cross-origin-opener-policy",
+      ];
 
-      // ── Grade calculation ────────────────────────────────────────────────────
-      let score = 100;
-      if (!headers["content-security-policy"]) score -= 20;
-      if (!headers["strict-transport-security"]) score -= 15;
-      if (!headers["x-frame-options"] && !headers["content-security-policy"]?.includes("frame-ancestors")) score -= 10;
-      if (!headers["x-content-type-options"]) score -= 10;
-      if (!headers["referrer-policy"]) score -= 5;
-      if (!isHttps) score -= 25;
-      if (headers["access-control-allow-origin"] === "*") score -= 15;
-      score = Math.max(0, score);
+      const presentHeaders: Record<string, string> = {};
+      const missingHeaders: string[] = [];
+
+      for (const name of SECURITY_HEADERS) {
+        const val = h.get(name) ?? h.get(name.replace("permissions-policy", "feature-policy"));
+        if (val) {
+          presentHeaders[name] = val;
+        } else {
+          missingHeaders.push(name);
+        }
+      }
+
+      // Also capture informational headers
+      for (const extra of ["access-control-allow-origin", "set-cookie", "server", "x-powered-by"]) {
+        const val = h.get(extra);
+        if (val) presentHeaders[extra] = val;
+      }
+
+      // ── Score: deduct per missing header ──────────────────────────────────
+      let rawScore = 100;
+      if (!presentHeaders["content-security-policy"])                                          rawScore -= 20;
+      if (!presentHeaders["strict-transport-security"])                                        rawScore -= 15;
+      if (!presentHeaders["x-frame-options"] && !presentHeaders["content-security-policy"]?.includes("frame-ancestors")) rawScore -= 10;
+      if (!presentHeaders["x-content-type-options"])                                           rawScore -= 10;
+      if (!presentHeaders["referrer-policy"])                                                  rawScore -=  5;
+      if (!presentHeaders["permissions-policy"])                                               rawScore -=  5;
+      if (!isHttps)                                                                            rawScore -= 25;
+      if (presentHeaders["access-control-allow-origin"] === "*")                              rawScore -= 15;
+      rawScore = Math.max(0, rawScore);
 
       const grade =
-        score >= 90 ? "A+" :
-        score >= 80 ? "A" :
-        score >= 65 ? "B" :
-        score >= 50 ? "C" :
-        score >= 35 ? "D" :
-        "F";
+        rawScore >= 90 ? "A+" :
+        rawScore >= 80 ? "A"  :
+        rawScore >= 65 ? "B"  :
+        rawScore >= 50 ? "C"  :
+        rawScore >= 35 ? "D"  : "F";
+
+      const expiry = new Date();
+      expiry.setDate(expiry.getDate() + (isHttps ? 90 : 0));
 
       return {
+        rawScore,
         grade,
-        headers,
+        presentHeaders,
+        missingHeaders,
         ssl: {
-          valid: isHttps,
-          // We can't inspect the cert expiry without TLS introspection — use 90-day estimate for HTTPS
-          expiry: (() => {
-            const d = new Date();
-            d.setDate(d.getDate() + (isHttps ? 90 : 0));
-            return d;
-          })(),
+          valid:    isHttps,
+          expiry,
           protocol: isHttps ? "TLS 1.3" : "None",
-          grade: isHttps ? "A" : "F",
+          grade:    isHttps ? "A" : "F",
         },
       };
     } finally {
@@ -154,8 +170,9 @@ const realSecurityAdapter: SecurityHeadersAdapter = {
 
 class SecurityScanner implements AuditScanner<SecurityAnalysis> {
   readonly name = "security" as const;
-  readonly description = "Inspects HTTP security headers, TLS, CORS, and cookie flags";
-  readonly version = "2.0.0";
+  readonly description =
+    "Inspects HTTP security headers (CSP, HSTS, X-Frame, XCTO, Referrer-Policy, Permissions-Policy), TLS, CORS, and cookies";
+  readonly version = "3.0.0";
   readonly adapter = "real-header-check";
 
   private securityAdapter: SecurityHeadersAdapter;
@@ -169,67 +186,71 @@ class SecurityScanner implements AuditScanner<SecurityAnalysis> {
 
     try {
       const result = await this.securityAdapter.analyze(context.url);
-      const h = result.headers;
+      const h = result.presentHeaders;
       const isHttps = new URL(context.url).protocol === "https:";
 
-      // ── Map adapter response to typed header flags ─────────────────────────
+      // ── Header boolean flags ───────────────────────────────────────────────
       const headers: SecurityAnalysis["headers"] = {
-        contentSecurityPolicy: !!h["content-security-policy"],
-        strictTransportSecurity: !!h["strict-transport-security"],
-        xFrameOptions: !!h["x-frame-options"] || h["content-security-policy"]?.includes("frame-ancestors") === true,
-        xContentTypeOptions: h["x-content-type-options"]?.toLowerCase().includes("nosniff") ?? false,
-        referrerPolicy: !!h["referrer-policy"],
-        permissionsPolicy: !!h["permissions-policy"],
+        contentSecurityPolicy:    !!h["content-security-policy"],
+        strictTransportSecurity:  !!h["strict-transport-security"],
+        xFrameOptions:            !!h["x-frame-options"] || !!h["content-security-policy"]?.includes("frame-ancestors"),
+        xContentTypeOptions:      h["x-content-type-options"]?.toLowerCase().includes("nosniff") ?? false,
+        referrerPolicy:           !!h["referrer-policy"],
+        permissionsPolicy:        !!h["permissions-policy"],
         crossOriginEmbedderPolicy: !!h["cross-origin-embedder-policy"],
-        crossOriginOpenerPolicy: !!h["cross-origin-opener-policy"],
+        crossOriginOpenerPolicy:   !!h["cross-origin-opener-policy"],
       };
 
-      // ── Vulnerability detection from real headers ──────────────────────────
+      // ── Vulnerabilities derived from actual header inspection ─────────────
       const vulnerabilities: SecurityAnalysis["vulnerabilities"] = [];
 
+      if (!isHttps) {
+        vulnerabilities.push({ id: "no-https", ...VULNS["no-https"], affectedUrls: [context.url] });
+      }
       if (!headers.contentSecurityPolicy) {
-        vulnerabilities.push({ ...KNOWN_VULNERABILITIES[0], affectedUrls: [context.url] });
+        vulnerabilities.push({ id: "csp-missing", ...VULNS["csp-missing"], affectedUrls: [context.url] });
       }
       if (!headers.strictTransportSecurity && isHttps) {
-        vulnerabilities.push({ ...KNOWN_VULNERABILITIES[1], affectedUrls: [context.url] });
+        vulnerabilities.push({ id: "hsts-missing", ...VULNS["hsts-missing"], affectedUrls: [context.url] });
       }
       if (!headers.xFrameOptions) {
-        vulnerabilities.push({ ...KNOWN_VULNERABILITIES[2], affectedUrls: [context.url] });
-      }
-      if (h["access-control-allow-origin"] === "*") {
-        vulnerabilities.push({ ...KNOWN_VULNERABILITIES[3], affectedUrls: [context.url] });
-      }
-      if (!isHttps) {
-        vulnerabilities.push({ ...KNOWN_VULNERABILITIES[6], affectedUrls: [context.url] });
+        vulnerabilities.push({ id: "x-frame-missing", ...VULNS["x-frame-missing"], affectedUrls: [context.url] });
       }
       if (!headers.xContentTypeOptions) {
-        vulnerabilities.push({ ...KNOWN_VULNERABILITIES[7], affectedUrls: [context.url] });
+        vulnerabilities.push({ id: "xcto-missing", ...VULNS["xcto-missing"], affectedUrls: [context.url] });
+      }
+      if (!headers.referrerPolicy) {
+        vulnerabilities.push({ id: "referrer-missing", ...VULNS["referrer-missing"], affectedUrls: [context.url] });
+      }
+      if (!headers.permissionsPolicy) {
+        vulnerabilities.push({ id: "permissions-missing", ...VULNS["permissions-missing"], affectedUrls: [context.url] });
+      }
+      if (h["access-control-allow-origin"] === "*") {
+        vulnerabilities.push({ id: "cors-wildcard", ...VULNS["cors-wildcard"], affectedUrls: [context.url] });
       }
 
-      // ── Cookie security flags ──────────────────────────────────────────────
+      // ── Cookie flags ───────────────────────────────────────────────────────
       const cookieHeader = h["set-cookie"] ?? "";
       const hasHttpOnly = cookieHeader.toLowerCase().includes("httponly");
-      const hasSecure = cookieHeader.toLowerCase().includes("; secure");
+      const hasSecure   = cookieHeader.toLowerCase().includes("; secure");
       const hasSameSite = cookieHeader.toLowerCase().includes("samesite");
       const cookieIssues: string[] = [];
-      if (cookieHeader && !hasHttpOnly) cookieIssues.push("Cookie missing HttpOnly flag");
-      if (cookieHeader && !hasSecure && isHttps) cookieIssues.push("Cookie missing Secure flag");
-      if (cookieHeader && !hasSameSite) cookieIssues.push("Cookie missing SameSite attribute");
 
-      if (cookieHeader && cookieIssues.length > 0) {
-        vulnerabilities.push({ ...KNOWN_VULNERABILITIES[5], affectedUrls: [context.url] });
+      if (cookieHeader) {
+        if (!hasHttpOnly) cookieIssues.push("Missing HttpOnly flag — cookie accessible via document.cookie");
+        if (!hasSecure && isHttps) cookieIssues.push("Missing Secure flag — cookie may be sent over plain HTTP");
+        if (!hasSameSite) cookieIssues.push("Missing SameSite attribute — CSRF risk");
+        if (cookieIssues.length > 0) {
+          vulnerabilities.push({ id: "cookie-insecure", ...VULNS["cookie-insecure"], affectedUrls: [context.url] });
+        }
       }
 
-      // ── Score from grade ───────────────────────────────────────────────────
-      const gradeScore: Record<string, number> = {
-        "A+": 98, "A": 88, "B": 72, "C": 55, "D": 38, "F": 18,
-      };
-      const score = gradeScore[result.grade] ?? 50;
+      // ── Use raw score directly (no double-mapping through grade) ──────────
+      const score = result.rawScore;
 
-      const expiryDate = result.ssl.expiry;
       const expiresInDays = Math.max(
         0,
-        Math.round((expiryDate.getTime() - Date.now()) / 86400000),
+        Math.round((result.ssl.expiry.getTime() - Date.now()) / 86400000),
       );
 
       const completedAt = new Date();
@@ -254,7 +275,7 @@ class SecurityScanner implements AuditScanner<SecurityAnalysis> {
         mixedContent: !isHttps,
         cookieSecurity: {
           httpOnly: hasHttpOnly || !cookieHeader,
-          secure: hasSecure || !cookieHeader,
+          secure:   hasSecure   || !cookieHeader,
           sameSite: hasSameSite || !cookieHeader,
           issues: cookieIssues,
         },
@@ -271,14 +292,9 @@ class SecurityScanner implements AuditScanner<SecurityAnalysis> {
         score: 0,
         ssl: { valid: false, expiresInDays: 0, grade: "F", protocol: "Unknown", cipherStrength: "weak", hsts: false, hstsPreload: false },
         headers: {
-          contentSecurityPolicy: false,
-          strictTransportSecurity: false,
-          xFrameOptions: false,
-          xContentTypeOptions: false,
-          referrerPolicy: false,
-          permissionsPolicy: false,
-          crossOriginEmbedderPolicy: false,
-          crossOriginOpenerPolicy: false,
+          contentSecurityPolicy: false, strictTransportSecurity: false, xFrameOptions: false,
+          xContentTypeOptions: false, referrerPolicy: false, permissionsPolicy: false,
+          crossOriginEmbedderPolicy: false, crossOriginOpenerPolicy: false,
         },
         vulnerabilities: [],
         mixedContent: false,
