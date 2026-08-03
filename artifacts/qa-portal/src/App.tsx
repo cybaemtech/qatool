@@ -32,6 +32,8 @@ import TeamCollaboration from "@/pages/team-collaboration";
 import AiCopilot from "@/pages/ai-copilot";
 import AiFileAnalysis from "@/pages/ai-file-analysis";
 import Feedback from "@/pages/feedback";
+import Analytics from "@/pages/analytics";
+import Crawler from "@/pages/crawler";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -174,6 +176,18 @@ function AppRouter() {
       <Route path="/schedules">
         <ProtectedRoute>
           <Layout><Schedules /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/analytics">
+        <ProtectedRoute>
+          <Layout><Analytics /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/crawler">
+        <ProtectedRoute>
+          <Layout><Crawler /></Layout>
         </ProtectedRoute>
       </Route>
 

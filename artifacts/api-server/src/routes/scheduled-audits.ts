@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { scheduledAuditsTable, projectsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { scheduledAuditsTable, projectsTable, auditRunsTable } from "@workspace/db";
+import { eq, and, desc } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
+import { runPlaywrightAudit } from "../lib/audit-engine";
 
 const router = Router();
 
@@ -164,6 +165,83 @@ router.delete("/scheduled-audits/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(scheduledAuditsTable).where(eq(scheduledAuditsTable.id, id));
   res.status(204).send();
+});
+
+// POST /scheduled-audits/:id/run-now
+router.post("/scheduled-audits/:id/run-now", requireAuth, async (req, res) => {
+  const id = Number(req.params.id);
+
+  const [schedule] = await db
+    .select({ id: scheduledAuditsTable.id, projectId: scheduledAuditsTable.projectId, projectUrl: projectsTable.url })
+    .from(scheduledAuditsTable)
+    .innerJoin(projectsTable, eq(scheduledAuditsTable.projectId, projectsTable.id))
+    .where(eq(scheduledAuditsTable.id, id))
+    .limit(1);
+
+  if (!schedule) { res.status(404).json({ error: "Not found" }); return; }
+
+  const [auditRun] = await db.insert(auditRunsTable).values({
+    projectId: schedule.projectId,
+    status:    "pending",
+    bugsFound: 0,
+  }).returning();
+
+  // Update lastRunAt and increment runCount
+  await db.update(scheduledAuditsTable).set({
+    lastRunAt: new Date(),
+    runCount:  db.$count(scheduledAuditsTable, eq(scheduledAuditsTable.id, id)),
+  }).where(eq(scheduledAuditsTable.id, id));
+
+  // Fire audit in background
+  runPlaywrightAudit(auditRun.id, schedule.projectUrl).catch(() => {});
+
+  res.json({ auditRunId: auditRun.id, message: "Audit started" });
+});
+
+// GET /scheduled-audits/:id/history
+router.get("/scheduled-audits/:id/history", requireAuth, async (req, res) => {
+  const scheduleId = Number(req.params.id);
+
+  // Verify schedule exists
+  const [schedule] = await db
+    .select({ id: scheduledAuditsTable.id, projectId: scheduledAuditsTable.projectId })
+    .from(scheduledAuditsTable)
+    .where(eq(scheduledAuditsTable.id, scheduleId))
+    .limit(1);
+
+  if (!schedule) { res.status(404).json({ error: "Not found" }); return; }
+
+  // Return last 20 audit runs for this project, ordered newest first
+  const runs = await db
+    .select({
+      id:                auditRunsTable.id,
+      projectId:         auditRunsTable.projectId,
+      projectName:       projectsTable.name,
+      status:            auditRunsTable.status,
+      startedAt:         auditRunsTable.startedAt,
+      completedAt:       auditRunsTable.completedAt,
+      durationMs:        auditRunsTable.durationMs,
+      overallScore:      auditRunsTable.overallScore,
+      bugsFound:         auditRunsTable.bugsFound,
+      performanceScore:  auditRunsTable.performanceScore,
+      accessibilityScore: auditRunsTable.accessibilityScore,
+      seoScore:          auditRunsTable.seoScore,
+      bestPracticesScore: auditRunsTable.bestPracticesScore,
+      createdAt:         auditRunsTable.createdAt,
+      createdById:       auditRunsTable.createdById,
+    })
+    .from(auditRunsTable)
+    .leftJoin(projectsTable, eq(auditRunsTable.projectId, projectsTable.id))
+    .where(eq(auditRunsTable.projectId, schedule.projectId))
+    .orderBy(desc(auditRunsTable.createdAt))
+    .limit(20);
+
+  res.json(runs.map(r => ({
+    ...r,
+    startedAt:   r.startedAt   instanceof Date ? r.startedAt.toISOString()   : r.startedAt,
+    completedAt: r.completedAt instanceof Date ? r.completedAt.toISOString() : r.completedAt,
+    createdAt:   r.createdAt   instanceof Date ? r.createdAt.toISOString()   : r.createdAt,
+  })));
 });
 
 export default router;

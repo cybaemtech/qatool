@@ -650,6 +650,146 @@ export interface ActivityItem {
   createdAt: string;
 }
 
+export interface ScheduleRunResult {
+  auditRunId: number;
+  message: string;
+}
+
+export type CrawlJobStatus = typeof CrawlJobStatus[keyof typeof CrawlJobStatus];
+
+
+export const CrawlJobStatus = {
+  pending: 'pending',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface CrawlJob {
+  id: number;
+  projectId: number;
+  /** @nullable */
+  projectName?: string | null;
+  /** @nullable */
+  createdById?: number | null;
+  startUrl: string;
+  maxPages: number;
+  maxDepth: number;
+  respectRobotsTxt?: boolean;
+  discoverSitemap?: boolean;
+  status: CrawlJobStatus;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  /** @nullable */
+  errorMessage?: string | null;
+  pagesDiscovered: number;
+  pagesAudited: number;
+  pagesFailed: number;
+  /** @nullable */
+  overallScore?: number | null;
+  /** @nullable */
+  avgPerformance?: number | null;
+  /** @nullable */
+  avgAccessibility?: number | null;
+  /** @nullable */
+  avgSeo?: number | null;
+  /** @nullable */
+  avgSecurity?: number | null;
+  createdAt: string;
+}
+
+export interface CrawlJobInput {
+  projectId: number;
+  startUrl: string;
+  maxPages?: number;
+  maxDepth?: number;
+  respectRobotsTxt?: boolean;
+  discoverSitemap?: boolean;
+}
+
+export type CrawlPageStatus = typeof CrawlPageStatus[keyof typeof CrawlPageStatus];
+
+
+export const CrawlPageStatus = {
+  pending: 'pending',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+  skipped: 'skipped',
+} as const;
+
+export interface CrawlPage {
+  id: number;
+  crawlJobId: number;
+  url: string;
+  depth: number;
+  /** @nullable */
+  auditRunId?: number | null;
+  status: CrawlPageStatus;
+  /** @nullable */
+  errorMessage?: string | null;
+  /** @nullable */
+  pageTitle?: string | null;
+  /** @nullable */
+  metaDescription?: string | null;
+  /** @nullable */
+  overallScore?: number | null;
+  /** @nullable */
+  performanceScore?: number | null;
+  /** @nullable */
+  accessibilityScore?: number | null;
+  /** @nullable */
+  seoScore?: number | null;
+  /** @nullable */
+  securityScore?: number | null;
+  /** @nullable */
+  pageSizeBytes?: number | null;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+}
+
+export interface MetricTrendPoint {
+  date: string;
+  /** @nullable */
+  performance?: number | null;
+  /** @nullable */
+  accessibility?: number | null;
+  /** @nullable */
+  seo?: number | null;
+  /** @nullable */
+  security?: number | null;
+  /** @nullable */
+  health?: number | null;
+}
+
+export type RegressionEventSeverity = typeof RegressionEventSeverity[keyof typeof RegressionEventSeverity];
+
+
+export const RegressionEventSeverity = {
+  warning: 'warning',
+  critical: 'critical',
+} as const;
+
+export interface RegressionEvent {
+  metric: string;
+  date: string;
+  previousScore: number;
+  currentScore: number;
+  drop: number;
+  severity: RegressionEventSeverity;
+}
+
+export interface AnalyticsTrends {
+  points: MetricTrendPoint[];
+  regressions: RegressionEvent[];
+}
+
 export type ListProjectsParams = {
 search?: string;
 environment?: string;
@@ -684,6 +824,15 @@ auditRunId?: number;
 export type ListScheduledAuditsParams = {
 projectId?: number;
 status?: string;
+};
+
+export type ListCrawlJobsParams = {
+projectId?: number;
+};
+
+export type GetAnalyticsTrendsParams = {
+projectId?: number;
+days?: number;
 };
 
 export type ListNotificationsParams = {

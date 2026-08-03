@@ -29,6 +29,10 @@ tags:
     description: Scheduled audit management
   - name: notifications
     description: Notification center
+  - name: crawl-jobs
+    description: Website crawler
+  - name: analytics
+    description: Historical analytics and trend detection
 
 paths:
   /healthz:
@@ -840,6 +844,188 @@ paths:
         "204":
           description: Deleted
 
+  /scheduled-audits/{id}/run-now:
+    post:
+      operationId: runScheduledAuditNow
+      tags: [scheduled-audits]
+      summary: Trigger a scheduled audit immediately
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit run created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleRunResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /scheduled-audits/{id}/history:
+    get:
+      operationId: getScheduledAuditHistory
+      tags: [scheduled-audits]
+      summary: Get audit run history for a scheduled audit
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit run history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditRun"
+
+  # Crawl Jobs
+  /crawl-jobs:
+    get:
+      operationId: listCrawlJobs
+      tags: [crawl-jobs]
+      summary: List crawl jobs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of crawl jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrawlJob"
+    post:
+      operationId: createCrawlJob
+      tags: [crawl-jobs]
+      summary: Start a new website crawl
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrawlJobInput"
+      responses:
+        "201":
+          description: Created crawl job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrawlJob"
+
+  /crawl-jobs/{id}:
+    get:
+      operationId: getCrawlJob
+      tags: [crawl-jobs]
+      summary: Get crawl job by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Crawl job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrawlJob"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteCrawlJob
+      tags: [crawl-jobs]
+      summary: Delete a crawl job
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /crawl-jobs/{id}/pages:
+    get:
+      operationId: listCrawlPages
+      tags: [crawl-jobs]
+      summary: List pages discovered by a crawl job
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of crawl pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrawlPage"
+
+  # Analytics
+  /analytics/trends:
+    get:
+      operationId: getAnalyticsTrends
+      tags: [analytics]
+      summary: Get metric trends over time with regression detection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: integer
+        - name: days
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trend data for all metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsTrends"
+
   # Notifications
   /notifications:
     get:
@@ -1599,3 +1785,178 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    # Scheduled Audit Run Result
+    ScheduleRunResult:
+      type: object
+      required: [auditRunId, message]
+      properties:
+        auditRunId:
+          type: integer
+        message:
+          type: string
+
+    # Crawl Jobs
+    CrawlJob:
+      type: object
+      required: [id, projectId, startUrl, maxPages, maxDepth, status, pagesDiscovered, pagesAudited, pagesFailed, createdAt]
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        projectName:
+          type: ["string", "null"]
+        createdById:
+          type: ["integer", "null"]
+        startUrl:
+          type: string
+        maxPages:
+          type: integer
+        maxDepth:
+          type: integer
+        respectRobotsTxt:
+          type: boolean
+        discoverSitemap:
+          type: boolean
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        errorMessage:
+          type: ["string", "null"]
+        pagesDiscovered:
+          type: integer
+        pagesAudited:
+          type: integer
+        pagesFailed:
+          type: integer
+        overallScore:
+          type: ["number", "null"]
+        avgPerformance:
+          type: ["number", "null"]
+        avgAccessibility:
+          type: ["number", "null"]
+        avgSeo:
+          type: ["number", "null"]
+        avgSecurity:
+          type: ["number", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    CrawlJobInput:
+      type: object
+      required: [projectId, startUrl]
+      properties:
+        projectId:
+          type: integer
+        startUrl:
+          type: string
+        maxPages:
+          type: integer
+        maxDepth:
+          type: integer
+        respectRobotsTxt:
+          type: boolean
+        discoverSitemap:
+          type: boolean
+
+    CrawlPage:
+      type: object
+      required: [id, crawlJobId, url, depth, status, createdAt]
+      properties:
+        id:
+          type: integer
+        crawlJobId:
+          type: integer
+        url:
+          type: string
+        depth:
+          type: integer
+        auditRunId:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [pending, running, completed, failed, skipped]
+        errorMessage:
+          type: ["string", "null"]
+        pageTitle:
+          type: ["string", "null"]
+        metaDescription:
+          type: ["string", "null"]
+        overallScore:
+          type: ["number", "null"]
+        performanceScore:
+          type: ["number", "null"]
+        accessibilityScore:
+          type: ["number", "null"]
+        seoScore:
+          type: ["number", "null"]
+        securityScore:
+          type: ["number", "null"]
+        pageSizeBytes:
+          type: ["integer", "null"]
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    # Analytics
+    MetricTrendPoint:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+        performance:
+          type: ["number", "null"]
+        accessibility:
+          type: ["number", "null"]
+        seo:
+          type: ["number", "null"]
+        security:
+          type: ["number", "null"]
+        health:
+          type: ["number", "null"]
+
+    RegressionEvent:
+      type: object
+      required: [metric, date, previousScore, currentScore, drop, severity]
+      properties:
+        metric:
+          type: string
+        date:
+          type: string
+        previousScore:
+          type: number
+        currentScore:
+          type: number
+        drop:
+          type: number
+        severity:
+          type: string
+          enum: [warning, critical]
+
+    AnalyticsTrends:
+      type: object
+      required: [points, regressions]
+      properties:
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetricTrendPoint"
+        regressions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RegressionEvent"

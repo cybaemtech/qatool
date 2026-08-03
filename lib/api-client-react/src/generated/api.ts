@@ -21,6 +21,7 @@ import type {
 
 import type {
   ActivityItem,
+  AnalyticsTrends,
   AuditAiAnalysis,
   AuditInput,
   AuditRun,
@@ -30,13 +31,18 @@ import type {
   BugComment,
   BugCommentInput,
   BugUpdate,
+  CrawlJob,
+  CrawlJobInput,
+  CrawlPage,
   DashboardSummary,
   ErrorResponse,
+  GetAnalyticsTrendsParams,
   GetPerformanceHistoryParams,
   HealthScore,
   HealthStatus,
   ListAuditsParams,
   ListBugsParams,
+  ListCrawlJobsParams,
   ListNotificationsParams,
   ListProjectsParams,
   ListReportsParams,
@@ -51,6 +57,7 @@ import type {
   ProjectUpdate,
   Report,
   ReportInput,
+  ScheduleRunResult,
   ScheduledAudit,
   ScheduledAuditInput,
   ScheduledAuditUpdate,
@@ -2794,6 +2801,616 @@ export const useDeleteScheduledAudit = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteScheduledAuditMutationOptions(options));
     }
+
+export const getRunScheduledAuditNowUrl = (id: number,) => {
+
+
+
+
+  return `/api/scheduled-audits/${id}/run-now`
+}
+
+/**
+ * @summary Trigger a scheduled audit immediately
+ */
+export const runScheduledAuditNow = async (id: number, options?: RequestInit): Promise<ScheduleRunResult> => {
+
+  return customFetch<ScheduleRunResult>(getRunScheduledAuditNowUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRunScheduledAuditNowMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runScheduledAuditNow>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runScheduledAuditNow>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['runScheduledAuditNow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runScheduledAuditNow>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  runScheduledAuditNow(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunScheduledAuditNowMutationResult = NonNullable<Awaited<ReturnType<typeof runScheduledAuditNow>>>
+
+    export type RunScheduledAuditNowMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Trigger a scheduled audit immediately
+ */
+export const useRunScheduledAuditNow = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runScheduledAuditNow>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runScheduledAuditNow>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRunScheduledAuditNowMutationOptions(options));
+    }
+
+export const getGetScheduledAuditHistoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/scheduled-audits/${id}/history`
+}
+
+/**
+ * @summary Get audit run history for a scheduled audit
+ */
+export const getScheduledAuditHistory = async (id: number, options?: RequestInit): Promise<AuditRun[]> => {
+
+  return customFetch<AuditRun[]>(getGetScheduledAuditHistoryUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetScheduledAuditHistoryQueryKey = (id: number,) => {
+    return [
+    `/api/scheduled-audits/${id}/history`
+    ] as const;
+    }
+
+
+export const getGetScheduledAuditHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getScheduledAuditHistory>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScheduledAuditHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetScheduledAuditHistoryQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScheduledAuditHistory>>> = ({ signal }) => getScheduledAuditHistory(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScheduledAuditHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetScheduledAuditHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getScheduledAuditHistory>>>
+export type GetScheduledAuditHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get audit run history for a scheduled audit
+ */
+
+export function useGetScheduledAuditHistory<TData = Awaited<ReturnType<typeof getScheduledAuditHistory>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScheduledAuditHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetScheduledAuditHistoryQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListCrawlJobsUrl = (params?: ListCrawlJobsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crawl-jobs?${stringifiedParams}` : `/api/crawl-jobs`
+}
+
+/**
+ * @summary List crawl jobs
+ */
+export const listCrawlJobs = async (params?: ListCrawlJobsParams, options?: RequestInit): Promise<CrawlJob[]> => {
+
+  return customFetch<CrawlJob[]>(getListCrawlJobsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrawlJobsQueryKey = (params?: ListCrawlJobsParams,) => {
+    return [
+    `/api/crawl-jobs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCrawlJobsQueryOptions = <TData = Awaited<ReturnType<typeof listCrawlJobs>>, TError = ErrorType<unknown>>(params?: ListCrawlJobsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrawlJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrawlJobsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrawlJobs>>> = ({ signal }) => listCrawlJobs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrawlJobs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrawlJobsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrawlJobs>>>
+export type ListCrawlJobsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List crawl jobs
+ */
+
+export function useListCrawlJobs<TData = Awaited<ReturnType<typeof listCrawlJobs>>, TError = ErrorType<unknown>>(
+ params?: ListCrawlJobsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrawlJobs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrawlJobsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateCrawlJobUrl = () => {
+
+
+
+
+  return `/api/crawl-jobs`
+}
+
+/**
+ * @summary Start a new website crawl
+ */
+export const createCrawlJob = async (crawlJobInput: CrawlJobInput, options?: RequestInit): Promise<CrawlJob> => {
+
+  return customFetch<CrawlJob>(getCreateCrawlJobUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      crawlJobInput,)
+  }
+);}
+
+
+
+
+export const getCreateCrawlJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrawlJob>>, TError,{data: BodyType<CrawlJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCrawlJob>>, TError,{data: BodyType<CrawlJobInput>}, TContext> => {
+
+const mutationKey = ['createCrawlJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCrawlJob>>, {data: BodyType<CrawlJobInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCrawlJob(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCrawlJobMutationResult = NonNullable<Awaited<ReturnType<typeof createCrawlJob>>>
+    export type CreateCrawlJobMutationBody = BodyType<CrawlJobInput>
+    export type CreateCrawlJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a new website crawl
+ */
+export const useCreateCrawlJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCrawlJob>>, TError,{data: BodyType<CrawlJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCrawlJob>>,
+        TError,
+        {data: BodyType<CrawlJobInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCrawlJobMutationOptions(options));
+    }
+
+export const getGetCrawlJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/crawl-jobs/${id}`
+}
+
+/**
+ * @summary Get crawl job by ID
+ */
+export const getCrawlJob = async (id: number, options?: RequestInit): Promise<CrawlJob> => {
+
+  return customFetch<CrawlJob>(getGetCrawlJobUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCrawlJobQueryKey = (id: number,) => {
+    return [
+    `/api/crawl-jobs/${id}`
+    ] as const;
+    }
+
+
+export const getGetCrawlJobQueryOptions = <TData = Awaited<ReturnType<typeof getCrawlJob>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrawlJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCrawlJobQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCrawlJob>>> = ({ signal }) => getCrawlJob(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCrawlJob>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCrawlJobQueryResult = NonNullable<Awaited<ReturnType<typeof getCrawlJob>>>
+export type GetCrawlJobQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get crawl job by ID
+ */
+
+export function useGetCrawlJob<TData = Awaited<ReturnType<typeof getCrawlJob>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrawlJob>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCrawlJobQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteCrawlJobUrl = (id: number,) => {
+
+
+
+
+  return `/api/crawl-jobs/${id}`
+}
+
+/**
+ * @summary Delete a crawl job
+ */
+export const deleteCrawlJob = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCrawlJobUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCrawlJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCrawlJob>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCrawlJob>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCrawlJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCrawlJob>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCrawlJob(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCrawlJobMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCrawlJob>>>
+
+    export type DeleteCrawlJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a crawl job
+ */
+export const useDeleteCrawlJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCrawlJob>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCrawlJob>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCrawlJobMutationOptions(options));
+    }
+
+export const getListCrawlPagesUrl = (id: number,) => {
+
+
+
+
+  return `/api/crawl-jobs/${id}/pages`
+}
+
+/**
+ * @summary List pages discovered by a crawl job
+ */
+export const listCrawlPages = async (id: number, options?: RequestInit): Promise<CrawlPage[]> => {
+
+  return customFetch<CrawlPage[]>(getListCrawlPagesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrawlPagesQueryKey = (id: number,) => {
+    return [
+    `/api/crawl-jobs/${id}/pages`
+    ] as const;
+    }
+
+
+export const getListCrawlPagesQueryOptions = <TData = Awaited<ReturnType<typeof listCrawlPages>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrawlPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrawlPagesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrawlPages>>> = ({ signal }) => listCrawlPages(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrawlPages>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrawlPagesQueryResult = NonNullable<Awaited<ReturnType<typeof listCrawlPages>>>
+export type ListCrawlPagesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List pages discovered by a crawl job
+ */
+
+export function useListCrawlPages<TData = Awaited<ReturnType<typeof listCrawlPages>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrawlPages>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrawlPagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAnalyticsTrendsUrl = (params?: GetAnalyticsTrendsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/analytics/trends?${stringifiedParams}` : `/api/analytics/trends`
+}
+
+/**
+ * @summary Get metric trends over time with regression detection
+ */
+export const getAnalyticsTrends = async (params?: GetAnalyticsTrendsParams, options?: RequestInit): Promise<AnalyticsTrends> => {
+
+  return customFetch<AnalyticsTrends>(getGetAnalyticsTrendsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAnalyticsTrendsQueryKey = (params?: GetAnalyticsTrendsParams,) => {
+    return [
+    `/api/analytics/trends`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAnalyticsTrendsQueryOptions = <TData = Awaited<ReturnType<typeof getAnalyticsTrends>>, TError = ErrorType<unknown>>(params?: GetAnalyticsTrendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalyticsTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAnalyticsTrendsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnalyticsTrends>>> = ({ signal }) => getAnalyticsTrends(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAnalyticsTrends>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnalyticsTrendsQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalyticsTrends>>>
+export type GetAnalyticsTrendsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get metric trends over time with regression detection
+ */
+
+export function useGetAnalyticsTrends<TData = Awaited<ReturnType<typeof getAnalyticsTrends>>, TError = ErrorType<unknown>>(
+ params?: GetAnalyticsTrendsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAnalyticsTrends>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAnalyticsTrendsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListNotificationsUrl = (params?: ListNotificationsParams,) => {
   const normalizedParams = new URLSearchParams();

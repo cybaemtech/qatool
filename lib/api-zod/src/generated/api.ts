@@ -719,6 +719,196 @@ export const DeleteScheduledAuditParams = zod.object({
 
 
 /**
+ * @summary Trigger a scheduled audit immediately
+ */
+export const RunScheduledAuditNowParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RunScheduledAuditNowResponse = zod.object({
+  "auditRunId": zod.number(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Get audit run history for a scheduled audit
+ */
+export const GetScheduledAuditHistoryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetScheduledAuditHistoryResponseItem = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "projectName": zod.string().nullish(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed', 'cancelled']),
+  "startedAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "durationMs": zod.number().nullish(),
+  "overallScore": zod.number().nullish(),
+  "bugsFound": zod.number().optional(),
+  "performanceScore": zod.number().nullish(),
+  "accessibilityScore": zod.number().nullish(),
+  "seoScore": zod.number().nullish(),
+  "bestPracticesScore": zod.number().nullish(),
+  "findings": zod.object({
+
+}).passthrough().nullish(),
+  "aiSummary": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "createdById": zod.number().nullish()
+})
+export const GetScheduledAuditHistoryResponse = zod.array(GetScheduledAuditHistoryResponseItem)
+
+
+/**
+ * @summary List crawl jobs
+ */
+export const ListCrawlJobsQueryParams = zod.object({
+  "projectId": zod.coerce.number().optional()
+})
+
+export const ListCrawlJobsResponseItem = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "projectName": zod.string().nullish(),
+  "createdById": zod.number().nullish(),
+  "startUrl": zod.string(),
+  "maxPages": zod.number(),
+  "maxDepth": zod.number(),
+  "respectRobotsTxt": zod.boolean().optional(),
+  "discoverSitemap": zod.boolean().optional(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed', 'cancelled']),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "pagesDiscovered": zod.number(),
+  "pagesAudited": zod.number(),
+  "pagesFailed": zod.number(),
+  "overallScore": zod.number().nullish(),
+  "avgPerformance": zod.number().nullish(),
+  "avgAccessibility": zod.number().nullish(),
+  "avgSeo": zod.number().nullish(),
+  "avgSecurity": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCrawlJobsResponse = zod.array(ListCrawlJobsResponseItem)
+
+
+/**
+ * @summary Start a new website crawl
+ */
+export const CreateCrawlJobBody = zod.object({
+  "projectId": zod.number(),
+  "startUrl": zod.string(),
+  "maxPages": zod.number().optional(),
+  "maxDepth": zod.number().optional(),
+  "respectRobotsTxt": zod.boolean().optional(),
+  "discoverSitemap": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Get crawl job by ID
+ */
+export const GetCrawlJobParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCrawlJobResponse = zod.object({
+  "id": zod.number(),
+  "projectId": zod.number(),
+  "projectName": zod.string().nullish(),
+  "createdById": zod.number().nullish(),
+  "startUrl": zod.string(),
+  "maxPages": zod.number(),
+  "maxDepth": zod.number(),
+  "respectRobotsTxt": zod.boolean().optional(),
+  "discoverSitemap": zod.boolean().optional(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed', 'cancelled']),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "errorMessage": zod.string().nullish(),
+  "pagesDiscovered": zod.number(),
+  "pagesAudited": zod.number(),
+  "pagesFailed": zod.number(),
+  "overallScore": zod.number().nullish(),
+  "avgPerformance": zod.number().nullish(),
+  "avgAccessibility": zod.number().nullish(),
+  "avgSeo": zod.number().nullish(),
+  "avgSecurity": zod.number().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a crawl job
+ */
+export const DeleteCrawlJobParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List pages discovered by a crawl job
+ */
+export const ListCrawlPagesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListCrawlPagesResponseItem = zod.object({
+  "id": zod.number(),
+  "crawlJobId": zod.number(),
+  "url": zod.string(),
+  "depth": zod.number(),
+  "auditRunId": zod.number().nullish(),
+  "status": zod.enum(['pending', 'running', 'completed', 'failed', 'skipped']),
+  "errorMessage": zod.string().nullish(),
+  "pageTitle": zod.string().nullish(),
+  "metaDescription": zod.string().nullish(),
+  "overallScore": zod.number().nullish(),
+  "performanceScore": zod.number().nullish(),
+  "accessibilityScore": zod.number().nullish(),
+  "seoScore": zod.number().nullish(),
+  "securityScore": zod.number().nullish(),
+  "pageSizeBytes": zod.number().nullish(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCrawlPagesResponse = zod.array(ListCrawlPagesResponseItem)
+
+
+/**
+ * @summary Get metric trends over time with regression detection
+ */
+export const GetAnalyticsTrendsQueryParams = zod.object({
+  "projectId": zod.coerce.number().optional(),
+  "days": zod.coerce.number().optional()
+})
+
+export const GetAnalyticsTrendsResponse = zod.object({
+  "points": zod.array(zod.object({
+  "date": zod.string(),
+  "performance": zod.number().nullish(),
+  "accessibility": zod.number().nullish(),
+  "seo": zod.number().nullish(),
+  "security": zod.number().nullish(),
+  "health": zod.number().nullish()
+})),
+  "regressions": zod.array(zod.object({
+  "metric": zod.string(),
+  "date": zod.string(),
+  "previousScore": zod.number(),
+  "currentScore": zod.number(),
+  "drop": zod.number(),
+  "severity": zod.enum(['warning', 'critical'])
+}))
+})
+
+
+/**
  * @summary List notifications for current user
  */
 export const ListNotificationsQueryParams = zod.object({
