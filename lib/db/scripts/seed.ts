@@ -277,14 +277,6 @@ async function main() {
       }).returning();
       totalAudits++;
 
-      // Screenshots for completed/failed runs (a running audit engine would still have captured what it could).
-      if (status !== "cancelled") {
-        await db.insert(screenshotsTable).values([
-          { auditRunId: run.id, deviceType: "desktop", dataUrl: PLACEHOLDER_PNG, createdAt: completedAt },
-          { auditRunId: run.id, deviceType: "tablet", dataUrl: PLACEHOLDER_PNG, createdAt: completedAt },
-          { auditRunId: run.id, deviceType: "mobile", dataUrl: PLACEHOLDER_PNG, createdAt: completedAt },
-        ]);
-      }
 
       // Bugs tied to this run.
       const createdBugs = [];
