@@ -1,12 +1,13 @@
 import { useState } from "react";
+import type { JSX } from "react";
 import {
   useListCrawlJobs,
   useCreateCrawlJob,
-  useGetCrawlJob,
   useDeleteCrawlJob,
   useListCrawlPages,
   useListProjects,
   getListCrawlJobsQueryKey,
+  type CrawlJob,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -54,7 +55,7 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-yellow-100 text-yellow-700 border-yellow-200",
 };
 
-const PAGE_STATUS_ICON: Record<string, JSX.Element> = {
+const PAGE_STATUS_ICON: Record<string, JSX.Element | undefined> = {
   pending:   <Clock className="h-3.5 w-3.5 text-gray-400" />,
   running:   <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />,
   completed: <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />,
@@ -120,7 +121,7 @@ function CrawlJobDetail({ jobId }: { jobId: number }) {
   );
 }
 
-function CrawlJobRow({ job, onDelete }: { job: ReturnType<typeof useListCrawlJobs>["data"] extends (infer T)[] ? T : never; onDelete: (id: number) => void }) {
+function CrawlJobRow({ job, onDelete }: { job: CrawlJob; onDelete: (id: number) => void }) {
   const [open, setOpen] = useState(false);
 
   return (

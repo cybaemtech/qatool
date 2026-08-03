@@ -11,7 +11,7 @@ import os from "os";
 import type { AuditScanner, AuditContext, PerformanceMetrics } from "../audit-types";
 
 export interface LighthouseAdapter {
-  audit(url: string, options?: { device: "mobile" | "desktop" }): Promise<{
+  audit(url: string, options?: { device?: "mobile" | "desktop" }): Promise<{
     categories: { performance: { score: number } };
     audits: Record<string, {
       id: string;

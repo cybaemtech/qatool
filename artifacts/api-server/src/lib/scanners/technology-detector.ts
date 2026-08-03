@@ -289,7 +289,7 @@ const realTechAdapter: TechDetectionAdapter = {
           const globals: Record<string, boolean> = {};
           for (const name of globalNames) {
             try {
-              globals[name] = (window as Record<string, unknown>)[name] !== undefined;
+              globals[name] = (window as unknown as Record<string, unknown>)[name] !== undefined;
             } catch {
               globals[name] = false;
             }

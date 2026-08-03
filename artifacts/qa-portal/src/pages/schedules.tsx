@@ -8,6 +8,7 @@ import {
   useGetScheduledAuditHistory,
   useListProjects,
   getListScheduledAuditsQueryKey,
+  getGetScheduledAuditHistoryQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,7 @@ function AuditStatusIcon({ status }: { status: string }) {
 }
 
 function HistoryDialog({ scheduleId, open, onClose }: { scheduleId: number | null; open: boolean; onClose: () => void }) {
-  const { data: runs = [], isLoading } = useGetScheduledAuditHistory(scheduleId ?? 0, { query: { enabled: open && scheduleId != null } });
+  const { data: runs = [], isLoading } = useGetScheduledAuditHistory(scheduleId ?? 0, { query: { queryKey: getGetScheduledAuditHistoryQueryKey(scheduleId ?? 0), enabled: open && scheduleId != null } });
 
   return (
     <Dialog open={open} onOpenChange={o => { if (!o) onClose(); }}>
@@ -277,7 +278,7 @@ export default function Schedules() {
               {s.lastRunAt ? format(new Date(s.lastRunAt), "MMM d") : "Never"}
             </TableCell>
             <TableCell className="text-sm text-muted-foreground">
-              {(s as Record<string, unknown>).runCount != null ? String((s as Record<string, unknown>).runCount) : "—"}
+              {(s as unknown as Record<string, unknown>).runCount != null ? String((s as unknown as Record<string, unknown>).runCount) : "—"}
             </TableCell>
             <TableCell>
               <DropdownMenu>

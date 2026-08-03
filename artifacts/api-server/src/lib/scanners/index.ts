@@ -23,4 +23,4 @@ export type { BrowserConsoleAdapter } from "./console-error-collector";
 export type { NetworkHARAdapter } from "./network-analyzer";
 export type { ScreenshotAdapter } from "./screenshot-capture";
 export type { TechDetectionAdapter } from "./technology-detector";
-export type { LLMAdapter, AISummaryInput } from "./ai-summary-generator";
+export type { LLMAdapter, AuditSummaryInput } from "./ai-summary-generator";

@@ -193,6 +193,7 @@ export interface SecurityAnalysis extends ScannerResponse {
     cvssScore?: number;
     recommendation: string;
     references?: string[];
+    affectedUrls?: string[];
   }>;
   mixedContent: boolean;
   cookieSecurity: {
