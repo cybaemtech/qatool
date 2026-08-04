@@ -61,6 +61,19 @@ class DefaultAuditExecutionService implements AuditExecutionService {
       // ── Stage 1–N: Run scanner pipeline ──────────────────────────────────
       const { scannerOutputs, stages } = await auditPipeline.run(context);
 
+      // ── Guard: abort if the audit was cancelled while the pipeline ran ─────
+      // Cancel sets status="cancelled" in the DB; if that raced with our
+      // execution we must not overwrite it with "completed".
+      const [statusCheck] = await db
+        .select({ status: auditRunsTable.status })
+        .from(auditRunsTable)
+        .where(eq(auditRunsTable.id, auditRunId))
+        .limit(1);
+      if (statusCheck?.status === "cancelled") {
+        logger.info({ auditRunId }, "Audit cancelled during execution — skipping persistence");
+        return;
+      }
+
       // ── Scoring ───────────────────────────────────────────────────────────
       // Use safeScore/safePerformanceScore so that a scanner that ran but
       // failed (returning explicit 0 with success:false) falls back to a

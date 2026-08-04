@@ -154,31 +154,31 @@ const TIMELINE_STEPS = [
     label: "Crawling Website",
     offset: 0.5,
     icon: "crawl",
-    logs: ["Initializing headless Chromium", "Navigating to target URL", "DOM ready — 342 elements found", "Crawling 12 internal links"],
+    logs: ["Initializing headless Chromium", "Navigating to target URL", "DOM ready — page rendered", "Internal links crawled"],
   },
   {
     label: "Lighthouse Analysis",
     offset: 1.2,
     icon: "lighthouse",
-    logs: ["Running Lighthouse 11.x", "Simulating throttled 4G network", "Measuring FCP, LCP, CLS, TBT", "Computing performance score"],
+    logs: ["Running Lighthouse audit", "Measuring FCP, LCP, CLS, TBT", "Core Web Vitals recorded", "Performance score computed"],
   },
   {
     label: "Accessibility Scan",
     offset: 2.1,
     icon: "a11y",
-    logs: ["Running axe-core 4.x", "Checking WCAG 2.1 AA compliance", "Scanning ARIA roles and labels", "Color contrast analysis complete"],
+    logs: ["Running axe-core WCAG 2.1 AA scan", "Scanning ARIA roles and labels", "Color contrast analysis complete", "Violations recorded"],
   },
   {
     label: "Console Log Analysis",
     offset: 2.8,
     icon: "console",
-    logs: ["Intercepting console events", "5 errors captured", "3 warnings recorded", "Stack traces extracted"],
+    logs: ["Intercepting console events", "Console errors captured", "Failed network requests recorded", "Stack traces extracted"],
   },
   {
     label: "Broken Link Scan",
     offset: 3.5,
     icon: "links",
-    logs: ["Checking 24 internal links", "Checking 8 external links", "2 broken links detected", "Link map generated"],
+    logs: ["Extracting links from rendered DOM", "HEAD-checking internal links", "HEAD-checking external links", "Link status recorded"],
   },
   {
     label: "Performance Analysis",
@@ -187,12 +187,12 @@ const TIMELINE_STEPS = [
     logs: ["Analyzing JS bundle sizes", "Checking image optimization", "Measuring render-blocking resources", "Waterfall timing captured"],
   },
   {
-    label: "AI Analysis",
+    label: "Summary Generation",
     offset: 5.0,
     icon: "ai",
-    logs: ["Sending findings to AI model", "Generating root cause analysis", "Computing risk assessment", "Prioritizing recommended fixes"],
+    logs: ["Processing scanner findings", "Generating executive summary", "Computing risk assessment", "Prioritizing recommended fixes"],
   },
-  { label: "Report Generated", offset: -1, icon: "report", logs: ["Aggregating all findings", "Generating PDF report", "Storing screenshots", "Audit complete"] },
+  { label: "Report Generated", offset: -1, icon: "report", logs: ["Aggregating all findings", "Generating audit report", "Storing screenshots", "Audit complete"] },
 ];
 
 const RECOMMENDATIONS = [
@@ -827,7 +827,7 @@ export default function AuditDetail() {
       accessibility: Math.round(a.accessibilityScore ?? 0),
       seo: Math.round(a.seoScore ?? 0),
       bestPractices: Math.round(a.bestPracticesScore ?? 0),
-      health: Math.round(((a.performanceScore ?? 0) + (a.accessibilityScore ?? 0) + (a.seoScore ?? 0) + (a.bestPracticesScore ?? 0)) / 4),
+      health: Math.round(a.overallScore ?? 0),
     }));
     return [
       ...realEntries,
@@ -843,20 +843,21 @@ export default function AuditDetail() {
   }, [previousAudits, audit, healthScore]);
 
   // Health trend vs real previous audit (no fake fallback).
-  const prevHealth = prevAudit
-    ? Math.round(((prevAudit.performanceScore ?? 0) + (prevAudit.accessibilityScore ?? 0) + (prevAudit.seoScore ?? 0) + (prevAudit.bestPracticesScore ?? 0)) / 4)
+  const prevHealth = prevAudit?.overallScore != null
+    ? Math.round(prevAudit.overallScore)
     : null;
   const currHealth = healthScore?.score ?? 0;
   // null when there is no previous real audit to compare against.
   const healthTrend = prevHealth !== null ? currHealth - prevHealth : null;
 
-  // Score radar data
+  // Score radar data — B series uses previous audit scores when available
+  const hasPrevRadar = prevAudit != null;
   const radarData = [
-    { subject: "Perf", A: audit.performanceScore ?? 0, B: 72 },
-    { subject: "A11y", A: audit.accessibilityScore ?? 0, B: 85 },
-    { subject: "SEO", A: audit.seoScore ?? 0, B: 78 },
-    { subject: "BP", A: audit.bestPracticesScore ?? 0, B: 80 },
-    { subject: "Health", A: healthScore?.score ?? 0, B: 75 },
+    { subject: "Perf", A: audit.performanceScore ?? 0, ...(hasPrevRadar ? { B: Math.round(prevAudit!.performanceScore ?? 0) } : {}) },
+    { subject: "A11y", A: audit.accessibilityScore ?? 0, ...(hasPrevRadar ? { B: Math.round(prevAudit!.accessibilityScore ?? 0) } : {}) },
+    { subject: "SEO", A: audit.seoScore ?? 0, ...(hasPrevRadar ? { B: Math.round(prevAudit!.seoScore ?? 0) } : {}) },
+    { subject: "BP", A: audit.bestPracticesScore ?? 0, ...(hasPrevRadar ? { B: Math.round(prevAudit!.bestPracticesScore ?? 0) } : {}) },
+    { subject: "Overall", A: audit.overallScore ?? 0, ...(hasPrevRadar ? { B: Math.round(prevAudit!.overallScore ?? 0) } : {}) },
   ];
 
   return (
@@ -1961,11 +1962,11 @@ export default function AuditDetail() {
                     </TableHeader>
                     <TableBody>
                       {[
-                        { label: "Performance", curr: audit.performanceScore, prev: prevAudit?.performanceScore != null ? Math.round(prevAudit.performanceScore) : 68, best: Math.max(Math.round(audit.performanceScore ?? 0), ...previousAudits.map(a => Math.round(a.performanceScore ?? 0)), 74) },
-                        { label: "Accessibility", curr: audit.accessibilityScore, prev: prevAudit?.accessibilityScore != null ? Math.round(prevAudit.accessibilityScore) : 74, best: Math.max(Math.round(audit.accessibilityScore ?? 0), ...previousAudits.map(a => Math.round(a.accessibilityScore ?? 0)), 74) },
-                        { label: "SEO", curr: audit.seoScore, prev: prevAudit?.seoScore != null ? Math.round(prevAudit.seoScore) : 70, best: Math.max(Math.round(audit.seoScore ?? 0), ...previousAudits.map(a => Math.round(a.seoScore ?? 0)), 70) },
-                        { label: "Best Practices", curr: audit.bestPracticesScore, prev: prevAudit?.bestPracticesScore != null ? Math.round(prevAudit.bestPracticesScore) : 76, best: Math.max(Math.round(audit.bestPracticesScore ?? 0), ...previousAudits.map(a => Math.round(a.bestPracticesScore ?? 0)), 76) },
-                        { label: "Health Score", curr: healthScore?.score, prev: prevHealth ?? null, best: Math.max(currHealth, prevHealth ?? 0, 75) },
+                        { label: "Performance", curr: audit.performanceScore, prev: prevAudit?.performanceScore != null ? Math.round(prevAudit.performanceScore) : null, best: previousAudits.length > 0 ? Math.max(Math.round(audit.performanceScore ?? 0), ...previousAudits.map(a => Math.round(a.performanceScore ?? 0))) : Math.round(audit.performanceScore ?? 0) },
+                        { label: "Accessibility", curr: audit.accessibilityScore, prev: prevAudit?.accessibilityScore != null ? Math.round(prevAudit.accessibilityScore) : null, best: previousAudits.length > 0 ? Math.max(Math.round(audit.accessibilityScore ?? 0), ...previousAudits.map(a => Math.round(a.accessibilityScore ?? 0))) : Math.round(audit.accessibilityScore ?? 0) },
+                        { label: "SEO", curr: audit.seoScore, prev: prevAudit?.seoScore != null ? Math.round(prevAudit.seoScore) : null, best: previousAudits.length > 0 ? Math.max(Math.round(audit.seoScore ?? 0), ...previousAudits.map(a => Math.round(a.seoScore ?? 0))) : Math.round(audit.seoScore ?? 0) },
+                        { label: "Best Practices", curr: audit.bestPracticesScore, prev: prevAudit?.bestPracticesScore != null ? Math.round(prevAudit.bestPracticesScore) : null, best: previousAudits.length > 0 ? Math.max(Math.round(audit.bestPracticesScore ?? 0), ...previousAudits.map(a => Math.round(a.bestPracticesScore ?? 0))) : Math.round(audit.bestPracticesScore ?? 0) },
+                        { label: "Overall Score", curr: audit.overallScore, prev: prevHealth ?? null, best: previousAudits.length > 0 ? Math.max(Math.round(audit.overallScore ?? 0), ...previousAudits.map(a => Math.round(a.overallScore ?? 0))) : Math.round(audit.overallScore ?? 0) },
                       ].map(({ label, curr, prev, best }) => {
                         const c = curr != null ? Math.round(curr) : null;
                         const diff = c != null && prev != null ? c - prev : null;
@@ -2185,8 +2186,8 @@ export default function AuditDetail() {
             {/* Score Radar */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Benchmark Radar</CardTitle>
-                <CardDescription className="text-[10px]">You vs Industry Average</CardDescription>
+                <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Score Radar</CardTitle>
+                <CardDescription className="text-[10px]">{hasPrevRadar ? "Current vs Previous audit" : "Current audit scores"}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-44">
@@ -2194,14 +2195,14 @@ export default function AuditDetail() {
                     <RadarChart data={radarData}>
                       <PolarGrid />
                       <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
-                      <Radar name="You" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
-                      <Radar name="Industry" dataKey="B" stroke="#10b981" fill="#10b981" fillOpacity={0.15} />
+                      <Radar name="Current" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
+                      {hasPrevRadar && <Radar name="Previous" dataKey="B" stroke="#10b981" fill="#10b981" fillOpacity={0.15} />}
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="flex justify-center gap-4 text-[10px] text-muted-foreground">
-                  <div className="flex items-center gap-1"><div className="h-2 w-3 rounded-sm bg-indigo-500/40 border border-indigo-500" /> You</div>
-                  <div className="flex items-center gap-1"><div className="h-2 w-3 rounded-sm bg-emerald-500/30 border border-emerald-500" /> Industry</div>
+                  <div className="flex items-center gap-1"><div className="h-2 w-3 rounded-sm bg-indigo-500/40 border border-indigo-500" /> Current</div>
+                  {hasPrevRadar && <div className="flex items-center gap-1"><div className="h-2 w-3 rounded-sm bg-emerald-500/30 border border-emerald-500" /> Previous</div>}
                 </div>
               </CardContent>
             </Card>
