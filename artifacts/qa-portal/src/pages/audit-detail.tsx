@@ -796,22 +796,8 @@ export default function AuditDetail() {
     else { setSortCol(col); setSortDir("desc"); }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className={cn("rounded-xl bg-muted/60 animate-pulse", i === 0 ? "h-16" : i === 1 ? "h-28" : "h-48")} />
-        ))}
-      </div>
-    );
-  }
-  if (!audit) return <div className="p-12 text-center text-muted-foreground">Audit not found.</div>;
-
-  const isRunning = audit.status === "pending" || audit.status === "running";
-  const startAt = audit.startedAt ? new Date(audit.startedAt) : audit.createdAt ? new Date(audit.createdAt) : new Date();
-  const endAt = audit.completedAt ? new Date(audit.completedAt) : null;
-
-  // Build historical data using real audit history for this project
+  // Build historical data using real audit history for this project.
+  // Must be computed before any early returns so the hook call order is stable.
   const previousAudits = projectAudits
     .filter(a => a.id !== auditId && a.status === "completed" && a.performanceScore != null)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -833,14 +819,29 @@ export default function AuditDetail() {
       ...realEntries,
       {
         name: "Current",
-        performance: Math.round(audit.performanceScore ?? 0),
-        accessibility: Math.round(audit.accessibilityScore ?? 0),
-        seo: Math.round(audit.seoScore ?? 0),
-        bestPractices: Math.round(audit.bestPracticesScore ?? 0),
+        performance: Math.round(audit?.performanceScore ?? 0),
+        accessibility: Math.round(audit?.accessibilityScore ?? 0),
+        seo: Math.round(audit?.seoScore ?? 0),
+        bestPractices: Math.round(audit?.bestPracticesScore ?? 0),
         health: Math.round(healthScore?.score ?? 0),
       },
     ];
   }, [previousAudits, audit, healthScore]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className={cn("rounded-xl bg-muted/60 animate-pulse", i === 0 ? "h-16" : i === 1 ? "h-28" : "h-48")} />
+        ))}
+      </div>
+    );
+  }
+  if (!audit) return <div className="p-12 text-center text-muted-foreground">Audit not found.</div>;
+
+  const isRunning = audit.status === "pending" || audit.status === "running";
+  const startAt = audit.startedAt ? new Date(audit.startedAt) : audit.createdAt ? new Date(audit.createdAt) : new Date();
+  const endAt = audit.completedAt ? new Date(audit.completedAt) : null;
 
   // Health trend vs real previous audit (no fake fallback).
   const prevHealth = prevAudit?.overallScore != null

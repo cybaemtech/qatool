@@ -9,6 +9,8 @@
 import { logger } from "./logger";
 import { scannerRegistry } from "./scanner-registry";
 import type { AuditContext, AuditResult, ScannerName } from "./audit-types";
+import { auditAnalysisService } from "./audit-analysis-service";
+import { safePerformanceScore, safeScore } from "./scoring-utils";
 
 // ─── Pipeline stage record ────────────────────────────────────────────────────
 
@@ -67,14 +69,39 @@ export class AuditPipeline {
 
       // Inject accumulated outputs for the AI summary scanner so it can
       // reference real findings (violations, missing headers, SEO issues, CWVs).
+      // Also inject pre-computed _scores so the summary uses the same
+      // bestPracticesScore and overallScore formula as audit-execution-service.
       let runContext = context;
       if (scanner.name === "ai-summary") {
+        const perfScore = safePerformanceScore(scannerOutputs.performance);
+        const accScore  = safeScore(scannerOutputs.accessibility);
+        const seoScore  = safeScore(scannerOutputs.seo);
+        const secScore  = safeScore(scannerOutputs.security);
+        const bpScore   = auditAnalysisService.computeBestPracticesScore(scannerOutputs);
+        const overallScore = auditAnalysisService.computeOverallScore({
+          performance: perfScore,
+          accessibility: accScore,
+          seo: seoScore,
+          security: secScore,
+          bestPractices: bpScore,
+        });
+
         runContext = {
           ...context,
           options: {
             ...(context.options ?? {}),
             _scannerOutputs: scannerOutputs as Record<string, unknown>,
-          } as AuditContext["options"] & { _scannerOutputs?: Record<string, unknown> },
+            _scores: {
+              performanceScore: perfScore,
+              accessibilityScore: accScore,
+              seoScore,
+              securityScore: secScore,
+              bestPracticesScore: bpScore,
+              overallScore,
+              bugsFound: 0,
+              criticalBugs: 0,
+            },
+          } as AuditContext["options"] & { _scannerOutputs?: Record<string, unknown>; _scores?: Record<string, number> },
         };
       }
 
