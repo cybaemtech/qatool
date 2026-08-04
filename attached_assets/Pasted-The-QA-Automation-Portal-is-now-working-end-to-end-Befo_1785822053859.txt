@@ -1,0 +1,139 @@
+The QA Automation Portal is now working end-to-end. Before adding new features, perform a full codebase review and improve the existing implementation without breaking any functionality.
+
+
+
+Tasks:
+
+
+
+1. Audit Accuracy
+
+- Verify all audit scores (Overall, Performance, Accessibility, SEO, Best Practices, Health Score) are calculated correctly.
+
+- Ensure dashboard, PDF, JSON export, AI Summary and API responses always use the same values.
+
+- Eliminate any duplicated calculations.
+
+
+
+2. Scanner Validation
+
+Review every scanner (Performance, Accessibility, SEO, Security, Network, Console Errors, Broken Links, Screenshot Capture, Technology Detection) and verify that each returns real data instead of placeholders whenever possible.
+
+
+
+3. Broken Link Detection
+
+Improve HTTP status handling:
+
+- 200 = Healthy
+
+- 301/302 = Redirect
+
+- 401 = Authentication Required
+
+- 403 = Access Restricted
+
+- 404 = Broken Link
+
+- 429 = Rate Limited (do not classify as broken)
+
+
+
+4. Screenshot System
+
+Verify screenshots are captured, stored, retrieved and displayed correctly for Desktop, Tablet and Mobile audits.
+
+Remove any remaining placeholder logic.
+
+
+
+5. AI Summary
+
+Ensure every AI-generated summary is based only on collected audit data.
+
+Never generate inconsistent scores or fabricated findings.
+
+
+
+6. Code Quality
+
+Search the entire project for:
+
+- duplicated code
+
+- unused code
+
+- dead components
+
+- unnecessary API calls
+
+- race conditions
+
+- inefficient queries
+
+- memory leaks
+
+- inconsistent naming
+
+Refactor where appropriate without changing behaviour.
+
+
+
+7. Performance
+
+Reduce unnecessary re-renders, optimize API requests, improve loading states and handle failures gracefully.
+
+
+
+8. Final Validation
+
+Run a complete self-review of the audit engine and provide a report containing:
+
+- Remaining issues
+
+- Potential bugs
+
+- Inaccurate logic (if any)
+
+- Suggested improvements
+
+- Production readiness score (out of 10)
+
+
+
+9. Fixes
+
+After identifying any issues during the review:
+
+
+
+- Fix all reproducible bugs immediately.
+
+- Remove placeholder or legacy logic that is no longer used.
+
+- Ensure all calculations, reports and exports are consistent.
+
+- Preserve backward compatibility.
+
+- Do not introduce regressions.
+
+
+
+Only stop after:
+
+- All builds pass.
+
+- TypeScript has zero errors.
+
+- Existing functionality is verified.
+
+- The application remains fully deployable.
+
+
+
+
+
+
+
+Do not redesign the UI. Focus only on improving reliability, correctness, maintainability and production readiness.

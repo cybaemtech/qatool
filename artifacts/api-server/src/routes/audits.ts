@@ -5,6 +5,7 @@ import { eq, and, desc, sql } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import { CreateAuditBody, ListAuditsQueryParams, GetAuditParams, CancelAuditParams } from "@workspace/api-zod";
 import { runPlaywrightAudit } from "../lib/audit-engine";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -88,7 +89,9 @@ router.post("/audits", requireAuth, async (req, res) => {
   res.status(201).json(formatAudit({ ...auditRun }, project.name));
 
   // Run audit in background (non-blocking)
-  runPlaywrightAudit(auditRun.id, project.url).catch(() => {});
+  runPlaywrightAudit(auditRun.id, project.url).catch((err: unknown) => {
+    logger.error({ err, auditRunId: auditRun.id }, "Background audit failed");
+  });
 });
 
 router.get("/audits/:id", requireAuth, async (req, res) => {

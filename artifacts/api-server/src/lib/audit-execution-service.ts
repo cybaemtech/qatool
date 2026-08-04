@@ -17,6 +17,7 @@ import { auditPipeline } from "./audit-pipeline";
 import { auditAnalysisService } from "./audit-analysis-service";
 import { auditStorageService } from "./audit-storage-service";
 import type { AuditContext } from "./audit-types";
+import { safePerformanceScore, safeScore } from "./scoring-utils";
 
 // ─── Interface ────────────────────────────────────────────────────────────────
 
@@ -61,10 +62,13 @@ class DefaultAuditExecutionService implements AuditExecutionService {
       const { scannerOutputs, stages } = await auditPipeline.run(context);
 
       // ── Scoring ───────────────────────────────────────────────────────────
-      const perfScore = scannerOutputs.performance?.scores.performance ?? 70;
-      const accScore = scannerOutputs.accessibility?.score ?? 70;
-      const seoScore = scannerOutputs.seo?.score ?? 70;
-      const secScore = scannerOutputs.security?.score ?? 70;
+      // Use safeScore/safePerformanceScore so that a scanner that ran but
+      // failed (returning explicit 0 with success:false) falls back to a
+      // neutral default instead of collapsing the overall score.
+      const perfScore = safePerformanceScore(scannerOutputs.performance);
+      const accScore  = safeScore(scannerOutputs.accessibility);
+      const seoScore  = safeScore(scannerOutputs.seo);
+      const secScore  = safeScore(scannerOutputs.security);
       const bpScore = auditAnalysisService.computeBestPracticesScore(scannerOutputs);
 
       const overallScore = auditAnalysisService.computeOverallScore({

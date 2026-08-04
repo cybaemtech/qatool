@@ -9,6 +9,7 @@ import * as cheerio from "cheerio";
 import path from "path";
 import os from "os";
 import type { AuditScanner, AuditContext, PerformanceMetrics } from "../audit-types";
+import { scoreToGrade } from "../scoring-utils";
 
 export interface LighthouseAdapter {
   audit(url: string, options?: { device?: "mobile" | "desktop" }): Promise<{
@@ -23,14 +24,6 @@ export interface LighthouseAdapter {
       details?: unknown;
     }>;
   }>;
-}
-
-function scoreToGrade(score: number): "A" | "B" | "C" | "D" | "F" {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
 }
 
 // ─── Real Lighthouse adapter ─────────────────────────────────────────────────

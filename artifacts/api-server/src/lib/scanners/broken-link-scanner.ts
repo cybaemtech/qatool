@@ -208,9 +208,25 @@ class BrokenLinkScanner implements AuditScanner<BrokenLinkResult> {
       const internalLinks = anchorLinks.filter(l => !l.isExternal).length;
       const externalLinks = anchorLinks.filter(l => l.isExternal).length;
 
-      // Broken = 4xx, 5xx, network timeout (0), or connection error (-1)
+      // HTTP status classification:
+      //   200        → healthy
+      //   301 / 302  → redirect (fetch followed it; final status is what matters)
+      //   401        → auth required — not a broken link, page exists
+      //   403        → access restricted — not a broken link, page exists
+      //   404        → broken link
+      //   429        → rate limited — not broken, try again later
+      //   5xx        → server error → broken
+      //   0 / -1     → timeout / network failure → broken
+      function isBroken(statusCode: number): boolean {
+        if (statusCode === 0 || statusCode === -1) return true;   // network failure
+        if (statusCode === 401 || statusCode === 403) return false; // requires auth
+        if (statusCode === 429) return false;                       // rate limited
+        if (statusCode >= 400) return true;                        // 404, 410, 5xx…
+        return false;
+      }
+
       const brokenLinks: BrokenLinkResult["brokenLinks"] = anchorLinks
-        .filter(l => l.statusCode === 0 || l.statusCode === -1 || l.statusCode >= 400)
+        .filter(l => isBroken(l.statusCode))
         .map(l => {
           let errorType: "404" | "500" | "timeout" | "ssl-error" | "dns-error" | undefined;
           if (l.statusCode === 0 || l.statusCode === -1) errorType = "timeout";
@@ -225,10 +241,9 @@ class BrokenLinkScanner implements AuditScanner<BrokenLinkResult> {
           };
         });
 
-      // Broken images (img src that returns 4xx/5xx/timeout)
-      const brokenImages = imageLinks.filter(
-        l => l.statusCode === 0 || l.statusCode === -1 || l.statusCode >= 400,
-      ).length;
+      // Broken images: same classification rules (auth-required/rate-limited images
+      // are not "broken" — they exist but require credentials).
+      const brokenImages = imageLinks.filter(l => isBroken(l.statusCode)).length;
 
       // Redirect chains — URLs where fetch followed a redirect
       const redirectChains: BrokenLinkResult["redirectChains"] = links

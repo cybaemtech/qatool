@@ -3,6 +3,7 @@
 // No database calls. Fully testable in isolation.
 
 import type { AuditResult, AuditFinding } from "./audit-types";
+import { scoreToGrade as _scoreToGrade } from "./scoring-utils";
 
 // ─── Interface ────────────────────────────────────────────────────────────────
 
@@ -49,11 +50,21 @@ class DefaultAuditAnalysisService implements AuditAnalysisService {
   /**
    * Best-practices score is a synthetic metric derived from security,
    * console errors, and broken links — it has no dedicated scanner.
+   *
+   * Scoring breakdown (max 100):
+   *   SSL valid:           +20  (0 if missing / no security scanner)
+   *   Zero console errors: +30  (15 if any errors; 30 if scanner absent — no penalty)
+   *   Zero broken links:   +30  (15 if any broken; 30 if scanner absent — no penalty)
+   *   Baseline:            +20  (ensures score never falls below 50 on a live page)
    */
   computeBestPracticesScore(result: Partial<AuditResult>): number {
-    const sslOk = result.security?.ssl.valid ? 20 : 0;
-    const consoleOk = result.consoleErrors?.totalErrors === 0 ? 30 : 15;
-    const linksOk = result.brokenLinks?.brokenLinks.length === 0 ? 30 : 15;
+    const sslOk     = result.security?.ssl?.valid ? 20 : 0;
+    // If the console-errors scanner didn't run, give full points (no penalty).
+    const consoleOk = result.consoleErrors == null ? 30
+                    : result.consoleErrors.totalErrors === 0 ? 30 : 15;
+    // If the broken-links scanner didn't run, give full points (no penalty).
+    const linksOk   = result.brokenLinks == null ? 30
+                    : result.brokenLinks.brokenLinks.length === 0 ? 30 : 15;
     return Math.round(sslOk + consoleOk + linksOk + 20);
   }
 
@@ -185,11 +196,7 @@ class DefaultAuditAnalysisService implements AuditAnalysisService {
   }
 
   scoreToGrade(score: number): "A" | "B" | "C" | "D" | "F" {
-    if (score >= 90) return "A";
-    if (score >= 75) return "B";
-    if (score >= 60) return "C";
-    if (score >= 40) return "D";
-    return "F";
+    return _scoreToGrade(score);
   }
 }
 

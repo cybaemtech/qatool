@@ -12,6 +12,7 @@ import type {
   PerformanceMetrics, AccessibilityMetrics, SEOAnalysis, SecurityAnalysis,
   BrokenLinkResult, ConsoleErrors, NetworkRequests, TechnologyProfile,
 } from "../audit-types";
+import { scoreToGrade, safePerformanceScore, safeScore } from "../scoring-utils";
 
 export interface LLMAdapter {
   complete(prompt: string): Promise<string>;
@@ -40,13 +41,6 @@ export interface AuditSummaryInput {
   criticalBugs: number;
 }
 
-function scoreToGrade(score: number): AISummary["overallGrade"] {
-  if (score >= 90) return "A";
-  if (score >= 75) return "B";
-  if (score >= 60) return "C";
-  if (score >= 40) return "D";
-  return "F";
-}
 
 function fmt(score: number): string {
   return `${score}/100 (${scoreToGrade(score)})`;
@@ -337,11 +331,15 @@ class AISummaryGenerator implements AuditScanner<AISummary> {
       const net   = scannerOutputs["networkRequests"] as NetworkRequests    | undefined;
       const tech  = scannerOutputs["technologies"]  as TechnologyProfile    | undefined;
 
-      // Derive scores from actual scanner outputs (fall back to passed-in scores or 70)
-      const performanceScore  = perf?.scores.performance ?? (scores["performanceScore"]  as number | undefined) ?? 70;
-      const accessibilityScore = a11y?.score             ?? (scores["accessibilityScore"] as number | undefined) ?? 70;
-      const seoScore           = seo?.score              ?? (scores["seoScore"]           as number | undefined) ?? 70;
-      const securityScore      = sec?.score              ?? (scores["securityScore"]      as number | undefined) ?? 70;
+      // Derive scores from actual scanner outputs.
+      // Use safeScore/safePerformanceScore so a failed scanner (success:false,
+      // score:0) falls back to the neutral default rather than collapsing the
+      // overall score.  Pre-computed scores passed via _scores are a secondary
+      // fallback when the scanner output itself is absent.
+      const performanceScore   = safePerformanceScore(perf,  (scores["performanceScore"]  as number | undefined) ?? 70);
+      const accessibilityScore = safeScore(a11y,             (scores["accessibilityScore"] as number | undefined) ?? 70);
+      const seoScore           = safeScore(seo,              (scores["seoScore"]           as number | undefined) ?? 70);
+      const securityScore      = safeScore(sec,              (scores["securityScore"]      as number | undefined) ?? 70);
       const bestPracticesScore = (scores["bestPracticesScore"] as number | undefined) ?? 70;
       const bugsFound          = (scores["bugsFound"]          as number | undefined) ?? 0;
       const criticalBugs       = (scores["criticalBugs"]       as number | undefined) ?? 0;

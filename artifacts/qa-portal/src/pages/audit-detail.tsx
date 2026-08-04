@@ -415,7 +415,8 @@ export default function AuditDetail() {
   // ── Performance insights — derived from scanner opportunities ─────────────────
   const perfInsights = useMemo(() => {
     const opps = realPerformance?.opportunities ?? [];
-    if (opps.length === 0) return PERF_INSIGHTS;
+    // Return only real scanner opportunities — never fall back to placeholder data.
+    if (opps.length === 0) return [];
 
     const iconMap: Record<string, typeof Package> = {
       "render-blocking-resources": Globe,
@@ -818,7 +819,8 @@ export default function AuditDetail() {
 
   const prevAudit = previousAudits[0] ?? null;
 
-  const histData = (() => {
+  // Historical trend chart — real audit data only; never pad with fake entries.
+  const histData = useMemo(() => {
     const realEntries = [...previousAudits].reverse().map((a, idx) => ({
       name: idx === previousAudits.length - 1 ? "Previous" : `${previousAudits.length - idx} audits ago`,
       performance: Math.round(a.performanceScore ?? 0),
@@ -827,11 +829,8 @@ export default function AuditDetail() {
       bestPractices: Math.round(a.bestPracticesScore ?? 0),
       health: Math.round(((a.performanceScore ?? 0) + (a.accessibilityScore ?? 0) + (a.seoScore ?? 0) + (a.bestPracticesScore ?? 0)) / 4),
     }));
-    const padded = realEntries.length < 4
-      ? [...HISTORICAL_DATA.slice(0, 4 - realEntries.length), ...realEntries]
-      : realEntries;
     return [
-      ...padded,
+      ...realEntries,
       {
         name: "Current",
         performance: Math.round(audit.performanceScore ?? 0),
@@ -841,14 +840,15 @@ export default function AuditDetail() {
         health: Math.round(healthScore?.score ?? 0),
       },
     ];
-  })();
+  }, [previousAudits, audit, healthScore]);
 
-  // Health trend vs real previous audit
+  // Health trend vs real previous audit (no fake fallback).
   const prevHealth = prevAudit
     ? Math.round(((prevAudit.performanceScore ?? 0) + (prevAudit.accessibilityScore ?? 0) + (prevAudit.seoScore ?? 0) + (prevAudit.bestPracticesScore ?? 0)) / 4)
-    : (HISTORICAL_DATA[HISTORICAL_DATA.length - 2]?.health ?? 72);
+    : null;
   const currHealth = healthScore?.score ?? 0;
-  const healthTrend = currHealth - prevHealth;
+  // null when there is no previous real audit to compare against.
+  const healthTrend = prevHealth !== null ? currHealth - prevHealth : null;
 
   // Score radar data
   const radarData = [
@@ -1965,10 +1965,10 @@ export default function AuditDetail() {
                         { label: "Accessibility", curr: audit.accessibilityScore, prev: prevAudit?.accessibilityScore != null ? Math.round(prevAudit.accessibilityScore) : 74, best: Math.max(Math.round(audit.accessibilityScore ?? 0), ...previousAudits.map(a => Math.round(a.accessibilityScore ?? 0)), 74) },
                         { label: "SEO", curr: audit.seoScore, prev: prevAudit?.seoScore != null ? Math.round(prevAudit.seoScore) : 70, best: Math.max(Math.round(audit.seoScore ?? 0), ...previousAudits.map(a => Math.round(a.seoScore ?? 0)), 70) },
                         { label: "Best Practices", curr: audit.bestPracticesScore, prev: prevAudit?.bestPracticesScore != null ? Math.round(prevAudit.bestPracticesScore) : 76, best: Math.max(Math.round(audit.bestPracticesScore ?? 0), ...previousAudits.map(a => Math.round(a.bestPracticesScore ?? 0)), 76) },
-                        { label: "Health Score", curr: healthScore?.score, prev: prevHealth, best: Math.max(currHealth, prevHealth, 75) },
+                        { label: "Health Score", curr: healthScore?.score, prev: prevHealth ?? null, best: Math.max(currHealth, prevHealth ?? 0, 75) },
                       ].map(({ label, curr, prev, best }) => {
                         const c = curr != null ? Math.round(curr) : null;
-                        const diff = c != null ? c - prev : null;
+                        const diff = c != null && prev != null ? c - prev : null;
                         return (
                           <TableRow key={label} className="hover:bg-muted/30">
                             <TableCell className="text-xs font-medium">{label}</TableCell>
@@ -2075,9 +2075,9 @@ export default function AuditDetail() {
                         </Badge>
                       </div>
                       <div className="text-right">
-                        <div className={cn("flex items-center gap-1 text-sm font-semibold justify-end", healthTrend >= 0 ? "text-green-600" : "text-red-500")}>
-                          {healthTrend > 0 ? <TrendingUp className="h-4 w-4" /> : healthTrend < 0 ? <TrendingDown className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
-                          {Math.abs(healthTrend)}%
+                        <div className={cn("flex items-center gap-1 text-sm font-semibold justify-end", healthTrend == null ? "text-muted-foreground" : healthTrend >= 0 ? "text-green-600" : "text-red-500")}>
+                          {healthTrend == null ? <Minus className="h-4 w-4" /> : healthTrend > 0 ? <TrendingUp className="h-4 w-4" /> : healthTrend < 0 ? <TrendingDown className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                          {healthTrend != null ? `${Math.abs(healthTrend)}%` : "—"}
                         </div>
                         <p className="text-[10px] text-muted-foreground">vs previous</p>
                       </div>

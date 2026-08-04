@@ -4,6 +4,7 @@
 // changes to callers — just implement the interface.
 
 import type { AuditResult } from "./audit-types";
+import { scoreToGrade } from "./scoring-utils";
 
 // ─── Interface ────────────────────────────────────────────────────────────────
 
@@ -165,11 +166,7 @@ class DefaultAuditReportingService implements AuditReportingService {
   }
 
   private toGrade(score: number): string {
-    if (score >= 90) return "A";
-    if (score >= 75) return "B";
-    if (score >= 60) return "C";
-    if (score >= 40) return "D";
-    return "F";
+    return scoreToGrade(score);
   }
 }
 

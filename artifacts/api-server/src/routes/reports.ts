@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../middlewares/auth";
 import { ListReportsQueryParams, GenerateReportBody, GetReportParams } from "@workspace/api-zod";
 import { generatePdfReport } from "../lib/pdf-generator";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
@@ -72,7 +73,9 @@ router.post("/reports", requireAuth, async (req, res) => {
 
   // Generate PDF in background
   const bugs = await db.select().from(bugsTable).where(eq(bugsTable.auditRunId, auditRunId));
-  generatePdfReport(report.id, audit as Record<string, unknown>, bugs).catch(() => {});
+  generatePdfReport(report.id, audit as Record<string, unknown>, bugs).catch((err: unknown) => {
+    logger.error({ err, reportId: report.id, auditRunId }, "Background report generation failed");
+  });
 });
 
 router.get("/reports/:id", requireAuth, async (req, res) => {
