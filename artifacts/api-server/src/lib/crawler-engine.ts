@@ -337,8 +337,13 @@ export async function runCrawlJob(crawlJobId: number): Promise<void> {
       }
     }
 
-    // Wait for all in-flight audits to finish
-    await Promise.all(inflight);
+    // Drain all in-flight audits — including promises added dynamically during
+    // page processing. Promise.all(inflight) would only wait for items in the
+    // array at call time; inflight grows as child pages are discovered, so we
+    // loop until every promise (including newly-enqueued children) has settled.
+    while (inflight.length > 0) {
+      await Promise.race(inflight);
+    }
 
     const avg = (arr: number[]) =>
       arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;

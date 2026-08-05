@@ -102,6 +102,16 @@ async function buildAll() {
       "puppeteer",
       "puppeteer-core",
       "electron",
+      // pdfkit ships CJS-only with binary font data and dynamic require() calls
+      // that break esbuild's ESM bundler; run it from node_modules at runtime.
+      "pdfkit",
+      "fontkit",
+      "png-js",
+      "brotli",
+      "linebreak",
+      "dfa",
+      "unicode-properties",
+      "unicode-trie",
     ],
     sourcemap: "linked",
     plugins: [

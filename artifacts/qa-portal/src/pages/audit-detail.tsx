@@ -950,6 +950,35 @@ export default function AuditDetail() {
               </CardContent>
             </Card>
           )}
+
+          {parentCrawlJob && (
+            <Card className="border-violet-200 bg-violet-50/60 dark:bg-violet-950/20 dark:border-violet-800">
+              <CardContent className="flex items-center gap-4 py-3 px-4">
+                <Globe className="h-5 w-5 text-violet-600 dark:text-violet-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-violet-900 dark:text-violet-300">
+                    Part of a website crawl
+                  </p>
+                  <p className="text-xs text-violet-700/80 dark:text-violet-400 truncate">
+                    {parentCrawlJob.startUrl}
+                    {" · "}
+                    {parentCrawlJob.pagesAudited} of {parentCrawlJob.pagesDiscovered} page{parentCrawlJob.pagesDiscovered !== 1 ? "s" : ""} audited
+                    {parentCrawlJob.overallScore != null && ` · avg score ${Math.round(parentCrawlJob.overallScore)}`}
+                  </p>
+                </div>
+                <Link href={`/crawl-jobs/${parentCrawlJob.id}`}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-shrink-0 border-violet-300 text-violet-700 hover:bg-violet-100 dark:border-violet-700 dark:text-violet-300 dark:hover:bg-violet-900/40"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                    View Crawl
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* ── Summary Cards (Enhancement 1: Interactive + hover animations) ── */}
@@ -1096,7 +1125,10 @@ export default function AuditDetail() {
                       const insights = scoreInsights(score, cat);
                       const color = scoreColor(score);
                       const v = score != null ? Math.round(score) : 0;
-                      const prevScore = histData[histData.length - 2][cat === "Performance" ? "performance" : cat === "Accessibility" ? "accessibility" : cat === "SEO" ? "seo" : "bestPractices"] as number;
+                      const prevEntry = histData.length >= 2 ? histData[histData.length - 2] : null;
+                      const prevScore = prevEntry
+                        ? (prevEntry[cat === "Performance" ? "performance" : cat === "Accessibility" ? "accessibility" : cat === "SEO" ? "seo" : "bestPractices"] as number ?? v)
+                        : v;
                       const diff = v - prevScore;
                       return (
                         <TabsContent key={cat} value={cat} className="mt-4 space-y-4" ref={cat === "Performance" ? perfRef : cat === "Accessibility" ? a11yRef : cat === "SEO" ? seoRef : bpRef}>
