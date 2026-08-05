@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -504,10 +504,16 @@ export default function CodeAnalysis() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: jobs = [], isLoading: jobsLoading } = useJobs();
-  const { data: selectedJob } = useJob(selectedJobId);
+  const { data: selectedJob, isLoading: jobLoading } = useJob(selectedJobId);
 
-  // Auto-select first completed job if none selected
-  const displayJob = selectedJob ?? (jobs.find(j => j.status === "completed") ?? null);
+  // Auto-select the first completed job when none is explicitly chosen.
+  // By setting selectedJobId, useJob fetches the full detail (including issues).
+  useEffect(() => {
+    if (selectedJobId === null && !jobsLoading && jobs.length > 0) {
+      const first = jobs.find(j => j.status === "completed");
+      if (first) setSelectedJobId(first.id);
+    }
+  }, [jobs, jobsLoading, selectedJobId]);
 
   const createMutation = useMutation({
     mutationFn: async (payload: FormData | { githubUrl: string; name: string }) => {
@@ -567,21 +573,23 @@ export default function CodeAnalysis() {
   };
 
   const handleGeneratePdf = async () => {
-    if (!displayJob) return;
+    if (!selectedJob) return;
+    const jobId = selectedJob.id;
     setPdfGenerating(true);
     try {
-      await apiFetch(`/code-analysis/${displayJob.id}/pdf`, { method: "POST" });
+      await apiFetch(`/code-analysis/${jobId}/pdf`, { method: "POST" });
       toast({ title: "PDF generation started", description: "Refresh in a moment to download." });
-      // Poll for pdfUrl
+      // Poll until pdfUrl is set on the job record
       const poll = setInterval(async () => {
-        const updated = await apiFetch<CodeAnalysisJob>(`/code-analysis/${displayJob.id}`);
+        const updated = await apiFetch<CodeAnalysisJob>(`/code-analysis/${jobId}`);
         if (updated.pdfUrl) {
           clearInterval(poll);
           setPdfGenerating(false);
-          queryClient.invalidateQueries({ queryKey: ["code-analysis-job", displayJob.id] });
+          queryClient.invalidateQueries({ queryKey: ["code-analysis-job", jobId] });
           queryClient.invalidateQueries({ queryKey: ["code-analysis-jobs"] });
         }
       }, 2000);
+      // Give up after 30 s
       setTimeout(() => { clearInterval(poll); setPdfGenerating(false); }, 30000);
     } catch (err) {
       toast({ title: "PDF generation failed", description: (err as Error).message, variant: "destructive" });
@@ -753,7 +761,8 @@ export default function CodeAnalysis() {
 
         {/* Right: results */}
         <div className="xl:col-span-2">
-          {!displayJob ? (
+          {selectedJobId === null ? (
+            /* Nothing selected yet (no completed jobs exist, or jobs still loading) */
             <Card className="h-full">
               <CardContent className="flex flex-col items-center justify-center h-80 text-center gap-4 text-muted-foreground">
                 <FileCode2 className="h-12 w-12 opacity-30" />
@@ -763,7 +772,23 @@ export default function CodeAnalysis() {
                 </div>
               </CardContent>
             </Card>
-          ) : displayJob.status === "pending" || displayJob.status === "running" ? (
+          ) : jobLoading ? (
+            /* Fetching the full job detail (includes issues array) */
+            <Card className="h-full">
+              <CardContent className="flex flex-col items-center justify-center h-80 text-center gap-4">
+                <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                <p className="text-sm text-muted-foreground">Loading analysis…</p>
+              </CardContent>
+            </Card>
+          ) : !selectedJob ? (
+            /* Should not happen in practice, but guard anyway */
+            <Card className="h-full">
+              <CardContent className="flex flex-col items-center justify-center h-80 text-center gap-4 text-muted-foreground">
+                <FileCode2 className="h-12 w-12 opacity-30" />
+                <p className="font-medium">Analysis not found</p>
+              </CardContent>
+            </Card>
+          ) : selectedJob.status === "pending" || selectedJob.status === "running" ? (
             <Card className="h-full">
               <CardContent className="flex flex-col items-center justify-center h-80 text-center gap-4">
                 <Loader2 className="h-10 w-10 text-primary animate-spin" />
@@ -773,20 +798,21 @@ export default function CodeAnalysis() {
                 </div>
               </CardContent>
             </Card>
-          ) : displayJob.status === "failed" ? (
+          ) : selectedJob.status === "failed" ? (
             <Card>
               <CardContent className="pt-8 pb-8 flex flex-col items-center gap-3 text-center">
                 <X className="h-10 w-10 text-destructive" />
                 <p className="font-semibold text-lg">Analysis failed</p>
-                <p className="text-muted-foreground text-sm max-w-md">{displayJob.errorMessage ?? "Unknown error"}</p>
+                <p className="text-muted-foreground text-sm max-w-md">{selectedJob.errorMessage ?? "Unknown error"}</p>
                 <Button variant="outline" size="sm" onClick={() => setSelectedJobId(null)} className="gap-2 mt-2">
                   <RefreshCw className="h-4 w-4" /> Try again
                 </Button>
               </CardContent>
             </Card>
           ) : (
+            /* Completed — selectedJob has the full issues array from the detail endpoint */
             <JobResults
-              job={selectedJob?.issues ? selectedJob : displayJob}
+              job={selectedJob}
               onGeneratePdf={handleGeneratePdf}
               pdfGenerating={pdfGenerating}
             />
