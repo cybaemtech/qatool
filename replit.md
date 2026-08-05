@@ -1,65 +1,64 @@
 # QA Automation Portal
 
-An enterprise-grade internal QA management platform with website auditing, bug tracking, project management, reporting, and team collaboration tools.
+An enterprise-grade internal QA platform for running automated website audits, tracking bugs, crawling multi-page sites, and generating reports.
 
-## Stack
+## Architecture
 
-- **Frontend**: React + Vite + TailwindCSS + shadcn/ui (`artifacts/qa-portal/`)
-- **Backend**: Express + TypeScript (`artifacts/api-server/`)
-- **Database**: PostgreSQL via Drizzle ORM (`lib/db/`)
-- **API contract**: OpenAPI spec + generated React Query hooks + Zod validators (`lib/api-spec/`, `lib/api-client-react/`, `lib/api-zod/`)
+**Monorepo (pnpm workspaces):**
+- `artifacts/api-server` — Express 5 API server, port 8080
+- `artifacts/qa-portal` — React + Vite frontend, port 3000 (PORT env var)
+- `lib/db` — Drizzle ORM schema + migrations (PostgreSQL)
+- `lib/api-client-react` — Generated React Query hooks (via Orval from OpenAPI spec)
+- `lib/api-spec` — OpenAPI 3 spec (`openapi.yaml`)
+- `lib/api-zod` — Zod validators generated from OpenAPI spec
 
-## Running the Project
+## How to Run
 
-Two workflows run in parallel:
+Both workflows are configured and managed:
+- **API Server** — `PORT=8080 pnpm --filter @workspace/api-server run dev`
+- **Start application** — `pnpm --filter @workspace/qa-portal run dev`
 
-| Workflow | Command | Port |
-|---|---|---|
-| API Server | `PORT=8080 pnpm --filter @workspace/api-server run dev` | 8080 |
-| Start application | `pnpm --filter @workspace/qa-portal run dev` | 3000 |
+### First-time setup
+```bash
+pnpm install
+cd lib/db && pnpm run push   # apply schema to database
+pnpm --filter @workspace/db run seed  # seed demo data
+```
 
-The API server builds with esbuild before starting. The frontend is Vite dev server with HMR.
+**Demo login:** `admin@qa.dev` / `password`
+
+## Key Features
+
+- **Website Audits** — Lighthouse + axe-core + Playwright (performance, a11y, SEO, best practices)
+- **Website Crawler** — BFS multi-page crawl with configurable depth/page limits, sitemap & robots.txt support
+- **Bug Tracker** — Full CRUD with severity, status, comments
+- **Screenshot Gallery** — Desktop/tablet/mobile captures per audit
+- **PDF Reports** — Auto-generated via PDFKit, downloadable from Reports page
+- **JSON Export** — Client-side export from Audit Detail page
+- **Dashboard** — Charts, trends, bug severity distribution, recent activity
+- **Scheduled Audits** — Cron-based recurring audit runs
+- **AI Analysis** — Risk assessment and fix suggestions per audit run
 
 ## Database
 
-PostgreSQL is pre-configured via the `DATABASE_URL` environment variable.
+Replit's managed PostgreSQL (`DATABASE_URL` is runtime-managed — do not set manually).
 
-To apply schema changes:
-```
-pnpm --filter @workspace/db run push
-```
+Schema changes: edit `lib/db/src/schema/`, then run `pnpm --filter @workspace/db run push`.
 
-To seed demo data:
-```
-pnpm --filter @workspace/db run seed
-```
+## API Conventions
 
-Demo accounts (password: `password`):
-- `admin@qa.dev` — admin
-- `sarah.chen@qa.dev` — QA engineer
-- `marcus.johnson@qa.dev` — QA engineer
-- `priya.patel@qa.dev` — QA engineer
+- All routes under `/api/...`
+- JWT auth via `Authorization: Bearer <token>` (30-day expiry)
+- Zod validation on all inputs; Orval-generated client in `lib/api-client-react`
 
-## Environment Variables
+## Known Notes
 
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string (pre-configured) |
-| `SESSION_SECRET` | JWT signing secret — **required**; the server will refuse to start without it |
-
-## Key Directories
-
-```
-artifacts/
-  api-server/   Express API (routes, scanners, audit engine)
-  qa-portal/    React frontend (pages, components, hooks)
-lib/
-  db/           Drizzle schema + migrations + seed script
-  api-spec/     OpenAPI spec + codegen config
-  api-client-react/  Generated React Query hooks
-  api-zod/      Generated Zod validators
-```
+- Screenshots are captured during real Playwright audits — seeded data has placeholder data only
+- PDF generation is async: POST `/api/reports` → background generation → download via `report.fileUrl`
+- Crawl jobs run Playwright in the background; concurrency limited to 3 simultaneous pages
 
 ## User Preferences
 
-- Maintain existing project structure and stack
+- Do not re-analyze or redesign completed functionality
+- Continue only from unfinished tasks, preserving existing APIs and UI
+- No placeholder or mock data — all features must use real implementations
