@@ -22,6 +22,8 @@ export const crawlJobsTable = pgTable("crawl_jobs", {
   includePatterns:   jsonb("include_patterns").$type<string[]>().default([]),
   respectRobotsTxt:  boolean("respect_robots_txt").notNull().default(true),
   discoverSitemap:   boolean("discover_sitemap").notNull().default(true),
+  // Concurrency
+  concurrencyLimit:  integer("concurrency_limit").notNull().default(3),
   // Status
   status:            crawlJobStatusEnum("status").notNull().default("pending"),
   startedAt:         timestamp("started_at"),
@@ -56,11 +58,12 @@ export const crawlPagesTable = pgTable("crawl_pages", {
   metaDescription: text("meta_description"),
   h1Count:         integer("h1_count"),
   // Scores (copied from audit run for quick queries)
-  overallScore:    real("overall_score"),
-  performanceScore: real("performance_score"),
+  overallScore:       real("overall_score"),
+  performanceScore:   real("performance_score"),
   accessibilityScore: real("accessibility_score"),
-  seoScore:        real("seo_score"),
-  securityScore:   real("security_score"),
+  seoScore:           real("seo_score"),
+  bestPracticesScore: real("best_practices_score"),
+  securityScore:      real("security_score"),
   // Size
   pageSizeBytes:   integer("page_size_bytes"),
   // Timing

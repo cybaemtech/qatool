@@ -10,6 +10,8 @@ import type { ScreenshotDeviceType } from './screenshotDeviceType';
 export interface Screenshot {
   id: number;
   auditRunId: number;
+  /** @nullable */
+  crawlPageId?: number | null;
   deviceType: ScreenshotDeviceType;
   dataUrl: string;
   createdAt: Date;

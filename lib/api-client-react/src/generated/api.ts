@@ -33,6 +33,7 @@ import type {
   BugUpdate,
   CrawlJob,
   CrawlJobInput,
+  CrawlJobProgress,
   CrawlPage,
   DashboardSummary,
   ErrorResponse,
@@ -42,6 +43,7 @@ import type {
   HealthStatus,
   ListAuditsParams,
   ListBugsParams,
+  ListCrawlJobScreenshotsParams,
   ListCrawlJobsParams,
   ListNotificationsParams,
   ListProjectsParams,
@@ -3316,6 +3318,172 @@ export function useListCrawlPages<TData = Awaited<ReturnType<typeof listCrawlPag
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListCrawlPagesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCrawlJobProgressUrl = (id: number,) => {
+
+
+
+
+  return `/api/crawl-jobs/${id}/progress`
+}
+
+/**
+ * @summary Get live crawl job progress counters
+ */
+export const getCrawlJobProgress = async (id: number, options?: RequestInit): Promise<CrawlJobProgress> => {
+
+  return customFetch<CrawlJobProgress>(getGetCrawlJobProgressUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCrawlJobProgressQueryKey = (id: number,) => {
+    return [
+    `/api/crawl-jobs/${id}/progress`
+    ] as const;
+    }
+
+
+export const getGetCrawlJobProgressQueryOptions = <TData = Awaited<ReturnType<typeof getCrawlJobProgress>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrawlJobProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCrawlJobProgressQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCrawlJobProgress>>> = ({ signal }) => getCrawlJobProgress(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCrawlJobProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCrawlJobProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getCrawlJobProgress>>>
+export type GetCrawlJobProgressQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get live crawl job progress counters
+ */
+
+export function useGetCrawlJobProgress<TData = Awaited<ReturnType<typeof getCrawlJobProgress>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCrawlJobProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCrawlJobProgressQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListCrawlJobScreenshotsUrl = (id: number,
+    params?: ListCrawlJobScreenshotsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/crawl-jobs/${id}/screenshots?${stringifiedParams}` : `/api/crawl-jobs/${id}/screenshots`
+}
+
+/**
+ * @summary List screenshots for a crawl job (optionally filtered by page or device)
+ */
+export const listCrawlJobScreenshots = async (id: number,
+    params?: ListCrawlJobScreenshotsParams, options?: RequestInit): Promise<Screenshot[]> => {
+
+  return customFetch<Screenshot[]>(getListCrawlJobScreenshotsUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCrawlJobScreenshotsQueryKey = (id: number,
+    params?: ListCrawlJobScreenshotsParams,) => {
+    return [
+    `/api/crawl-jobs/${id}/screenshots`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListCrawlJobScreenshotsQueryOptions = <TData = Awaited<ReturnType<typeof listCrawlJobScreenshots>>, TError = ErrorType<unknown>>(id: number,
+    params?: ListCrawlJobScreenshotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrawlJobScreenshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCrawlJobScreenshotsQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrawlJobScreenshots>>> = ({ signal }) => listCrawlJobScreenshots(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCrawlJobScreenshots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCrawlJobScreenshotsQueryResult = NonNullable<Awaited<ReturnType<typeof listCrawlJobScreenshots>>>
+export type ListCrawlJobScreenshotsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List screenshots for a crawl job (optionally filtered by page or device)
+ */
+
+export function useListCrawlJobScreenshots<TData = Awaited<ReturnType<typeof listCrawlJobScreenshots>>, TError = ErrorType<unknown>>(
+ id: number,
+    params?: ListCrawlJobScreenshotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCrawlJobScreenshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCrawlJobScreenshotsQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

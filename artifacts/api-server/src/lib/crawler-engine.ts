@@ -1,22 +1,49 @@
 // ─── Website Crawler Engine ───────────────────────────────────────────────────
-// BFS crawler: discovers all pages on a site, runs a full audit on each,
-// and stores per-page results in crawlPagesTable.
+// BFS crawler: discovers all pages on a site, runs a full audit on each
+// page concurrently (up to concurrencyLimit), and stores per-page results.
 //
 // Respects: maxPages, maxDepth, ignorePatterns, includePatterns,
-//           robots.txt (simple User-agent: * Disallow parsing), sitemap.xml discovery.
+//           robots.txt (User-agent: * Disallow parsing), sitemap.xml discovery.
+//
+// Filtered out: mailto:, tel:, javascript:, anchor-only (#), logout/admin URLs.
+// Concurrency: configurable via crawlJobsTable.concurrencyLimit (default 3).
 
 import { db } from "@workspace/db";
-import { crawlJobsTable, crawlPagesTable, auditRunsTable } from "@workspace/db";
+import { crawlJobsTable, crawlPagesTable, auditRunsTable, screenshotsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
-import { runPlaywrightAudit } from "./audit-engine";
+import { auditExecutionService } from "./audit-execution-service";
 import { withPage } from "./scanners/playwright-browser";
 
-// ─── robots.txt parser (minimal) ─────────────────────────────────────────────
+// ─── Simple semaphore for concurrency control ─────────────────────────────────
+
+class Semaphore {
+  private available: number;
+  private readonly queue: Array<() => void> = [];
+
+  constructor(limit: number) {
+    this.available = Math.max(1, limit);
+  }
+
+  acquire(): Promise<void> {
+    if (this.available > 0) {
+      this.available--;
+      return Promise.resolve();
+    }
+    return new Promise<void>(resolve => this.queue.push(resolve));
+  }
+
+  release(): void {
+    const next = this.queue.shift();
+    if (next) { next(); } else { this.available++; }
+  }
+}
+
+// ─── robots.txt parser (User-agent: * Disallow only) ─────────────────────────
 
 async function fetchDisallowedPaths(baseUrl: string): Promise<string[]> {
   try {
-    const r = await fetch(`${baseUrl}/robots.txt`, { signal: AbortSignal.timeout(5000) });
+    const r = await fetch(`${baseUrl}/robots.txt`, { signal: AbortSignal.timeout(6000) });
     if (!r.ok) return [];
     const text = await r.text();
     const disallowed: string[] = [];
@@ -44,13 +71,34 @@ async function fetchSitemapUrls(baseUrl: string): Promise<string[]> {
     const r = await fetch(`${baseUrl}/sitemap.xml`, { signal: AbortSignal.timeout(8000) });
     if (!r.ok) return urls;
     const text = await r.text();
-    const matches = text.matchAll(/<loc>(.*?)<\/loc>/g);
-    for (const m of matches) {
+    for (const m of text.matchAll(/<loc>(.*?)<\/loc>/g)) {
       const u = m[1]?.trim();
       if (u) urls.push(u);
     }
   } catch { /* ignore */ }
   return urls;
+}
+
+// ─── URL sanity filter ────────────────────────────────────────────────────────
+
+const SKIP_SCHEMES = /^(mailto:|tel:|javascript:|data:|ftp:|file:)/i;
+const SKIP_PATH_SEGMENTS = /(\/logout|\/sign-out|\/signout|\/wp-admin|\/admin\/|\/wp-login|\/account\/delete)/i;
+
+function shouldSkipUrl(url: string): boolean {
+  if (SKIP_SCHEMES.test(url)) return true;
+  if (url.startsWith("#")) return true;
+  try {
+    const u = new URL(url);
+    if (u.hash && !u.pathname && !u.search) return true; // anchor-only
+    if (SKIP_PATH_SEGMENTS.test(u.pathname)) return true;
+  } catch {
+    return true; // unparseable
+  }
+  return false;
+}
+
+function normalizeUrl(raw: string): string {
+  return raw.split("#")[0].replace(/\/$/, "") || raw;
 }
 
 // ─── Link extraction via Playwright ──────────────────────────────────────────
@@ -65,9 +113,9 @@ async function extractLinks(pageUrl: string, baseOrigin: string): Promise<string
             try { return new URL((a as HTMLAnchorElement).href, origin).href; }
             catch { return ""; }
           })
-          .filter((h) => h.startsWith(origin));
+          .filter((h) => Boolean(h));
       }, baseOrigin);
-      return [...new Set(hrefs)];
+      return [...new Set(hrefs.filter(h => h.startsWith(baseOrigin)))];
     }, { timeoutMs: 30000 });
   } catch {
     return [];
@@ -87,146 +135,213 @@ function matchesAny(url: string, patterns: string[]): boolean {
   return false;
 }
 
+// ─── Single page audit + storage ─────────────────────────────────────────────
+
+async function auditOnePage(
+  crawlJobId: number,
+  projectId: number,
+  pageRow: { id: number },
+  url: string,
+): Promise<{
+  auditRunId: number | null;
+  overall: number | null;
+  perf: number | null;
+  a11y: number | null;
+  seo: number | null;
+  bp: number | null;
+  sec: number | null;
+}> {
+  const [auditRun] = await db.insert(auditRunsTable).values({
+    projectId,
+    status: "pending",
+    bugsFound: 0,
+  }).returning();
+
+  // Run audit synchronously — we need results before continuing
+  await auditExecutionService.execute(auditRun.id, url);
+
+  // Fetch completed result
+  const [completed] = await db.select().from(auditRunsTable)
+    .where(eq(auditRunsTable.id, auditRun.id)).limit(1);
+
+  const overall = completed?.overallScore ?? null;
+  const perf    = completed?.performanceScore ?? null;
+  const a11y    = completed?.accessibilityScore ?? null;
+  const seo     = completed?.seoScore ?? null;
+  const bp      = completed?.bestPracticesScore ?? null;
+
+  // Extract security score from findings JSONB
+  const findings = completed?.findings as Record<string, unknown> | null;
+  const secData  = findings?.security as { score?: number } | null;
+  const sec      = secData?.score ?? null;
+
+  // Extract page metadata from SEO findings
+  const seoData  = findings?.seo as Record<string, unknown> | null;
+  const metaTags = seoData?.metaTags as Record<string, unknown> | null;
+  const headings = seoData?.headingStructure as Record<string, unknown> | null;
+
+  await db.update(crawlPagesTable).set({
+    status:             "completed",
+    auditRunId:         auditRun.id,
+    overallScore:       overall,
+    performanceScore:   perf,
+    accessibilityScore: a11y,
+    seoScore:           seo,
+    bestPracticesScore: bp,
+    securityScore:      sec,
+    pageTitle:          (metaTags?.title as string) ?? null,
+    metaDescription:    (metaTags?.description as string) ?? null,
+    h1Count:            (headings?.h1Count as number) ?? null,
+    completedAt:        new Date(),
+  }).where(eq(crawlPagesTable.id, pageRow.id));
+
+  // Link screenshots to this crawl page
+  await db.update(screenshotsTable)
+    .set({ crawlPageId: pageRow.id })
+    .where(eq(screenshotsTable.auditRunId, auditRun.id));
+
+  return { auditRunId: auditRun.id, overall, perf, a11y, seo, bp, sec };
+}
+
 // ─── Main crawl runner ────────────────────────────────────────────────────────
 
 export async function runCrawlJob(crawlJobId: number): Promise<void> {
-  const [job] = await db.select().from(crawlJobsTable).where(eq(crawlJobsTable.id, crawlJobId)).limit(1);
+  const [job] = await db.select().from(crawlJobsTable)
+    .where(eq(crawlJobsTable.id, crawlJobId)).limit(1);
   if (!job) throw new Error(`Crawl job ${crawlJobId} not found`);
 
   logger.info({ crawlJobId, url: job.startUrl }, "Crawl job started");
 
-  await db.update(crawlJobsTable).set({ status: "running", startedAt: new Date() })
+  await db.update(crawlJobsTable)
+    .set({ status: "running", startedAt: new Date() })
     .where(eq(crawlJobsTable.id, crawlJobId));
 
   try {
-    const baseOrigin = new URL(job.startUrl).origin;
-    const ignorePatterns = (job.ignorePatterns as string[]) ?? [];
-    const includePatterns = (job.includePatterns as string[]) ?? [];
+    const baseOrigin       = new URL(job.startUrl).origin;
+    const ignorePatterns   = (job.ignorePatterns as string[]) ?? [];
+    const includePatterns  = (job.includePatterns as string[]) ?? [];
+    const concurrencyLimit = job.concurrencyLimit ?? 3;
+    const sem              = new Semaphore(concurrencyLimit);
 
     // robots.txt
     const disallowed = job.respectRobotsTxt ? await fetchDisallowedPaths(baseOrigin) : [];
 
     // Sitemap discovery
-    const sitemapUrls: string[] = job.discoverSitemap ? await fetchSitemapUrls(baseOrigin) : [];
+    const sitemapUrls = job.discoverSitemap ? await fetchSitemapUrls(baseOrigin) : [];
 
     // BFS queue
     const visited = new Set<string>();
     const queue: Array<{ url: string; depth: number }> = [{ url: job.startUrl, depth: 0 }];
 
-    // Seed from sitemap
     for (const u of sitemapUrls) {
       if (u.startsWith(baseOrigin)) queue.push({ url: u, depth: 1 });
     }
 
     let pagesDiscovered = 0;
-    let pagesAudited = 0;
-    let pagesFailed = 0;
-    const scores: number[] = [];
-    const perfScores: number[] = [];
-    const a11yScores: number[] = [];
-    const seoScores: number[] = [];
-    const secScores: number[] = [];
+    let pagesAudited    = 0;
+    let pagesFailed     = 0;
 
-    while (queue.length > 0 && pagesDiscovered < job.maxPages) {
-      const item = queue.shift()!;
-      const normalizedUrl = item.url.split("#")[0].replace(/\/$/, "") || item.url;
+    const scores:    number[] = [];
+    const perfSc:    number[] = [];
+    const a11ySc:    number[] = [];
+    const seoSc:     number[] = [];
+    const secSc:     number[] = [];
 
-      if (visited.has(normalizedUrl)) continue;
-      visited.add(normalizedUrl);
+    // Active audit promises (concurrency window)
+    const inflight: Array<Promise<void>> = [];
 
-      // Pattern filters
-      if (ignorePatterns.length > 0 && matchesAny(normalizedUrl, ignorePatterns)) continue;
-      if (includePatterns.length > 0 && !matchesAny(normalizedUrl, includePatterns)) continue;
-
-      // robots.txt filter
-      if (disallowed.some((d) => d !== "/" && new URL(normalizedUrl).pathname.startsWith(d))) continue;
-
-      pagesDiscovered++;
-
-      // Create page row
-      const [pageRow] = await db.insert(crawlPagesTable).values({
-        crawlJobId,
-        url: normalizedUrl,
-        depth: item.depth,
-        status: "running",
-        startedAt: new Date(),
-      }).returning();
-
-      // Run the full audit on this page
+    const processPage = async (item: { url: string; depth: number }): Promise<void> => {
+      await sem.acquire();
       try {
-        const [auditRun] = await db.insert(auditRunsTable).values({
-          projectId: job.projectId,
-          status:    "pending",
-          bugsFound: 0,
+        const normalizedUrl = normalizeUrl(item.url);
+
+        // Cancel check: another concurrent task may have already visited
+        if (visited.has(normalizedUrl)) return;
+        visited.add(normalizedUrl);
+
+        // Skip filtered URLs
+        if (shouldSkipUrl(normalizedUrl)) return;
+        if (ignorePatterns.length > 0 && matchesAny(normalizedUrl, ignorePatterns)) return;
+        if (includePatterns.length > 0 && !matchesAny(normalizedUrl, includePatterns)) return;
+        if (disallowed.some(d => d !== "/" && new URL(normalizedUrl).pathname.startsWith(d))) return;
+
+        pagesDiscovered++;
+
+        const [pageRow] = await db.insert(crawlPagesTable).values({
+          crawlJobId,
+          url:      normalizedUrl,
+          depth:    item.depth,
+          status:   "running",
+          startedAt: new Date(),
         }).returning();
 
-        // Run audit synchronously (we need results before continuing)
-        await runPlaywrightAudit(auditRun.id, normalizedUrl);
+        try {
+          const result = await auditOnePage(crawlJobId, job.projectId, pageRow, normalizedUrl);
+          if (result.overall != null) scores.push(result.overall);
+          if (result.perf   != null) perfSc.push(result.perf);
+          if (result.a11y   != null) a11ySc.push(result.a11y);
+          if (result.seo    != null) seoSc.push(result.seo);
+          if (result.sec    != null) secSc.push(result.sec);
+          pagesAudited++;
 
-        // Fetch the completed audit run
-        const [completedRun] = await db.select().from(auditRunsTable)
-          .where(eq(auditRunsTable.id, auditRun.id)).limit(1);
-
-        const overall = completedRun?.overallScore ?? null;
-        const perf    = completedRun?.performanceScore ?? null;
-        const a11y    = completedRun?.accessibilityScore ?? null;
-        const seo     = completedRun?.seoScore ?? null;
-
-        // Extract metadata from findings
-        const findings = completedRun?.findings as Record<string, unknown> | null;
-        const seoData  = findings?.seo as Record<string, unknown> | null;
-        const metaTags = seoData?.metaTags as Record<string, unknown> | null;
-        const headings = seoData?.headingStructure as Record<string, unknown> | null;
-
-        await db.update(crawlPagesTable).set({
-          status:          "completed",
-          auditRunId:      auditRun.id,
-          overallScore:    overall,
-          performanceScore: perf,
-          accessibilityScore: a11y,
-          seoScore:        seo,
-          pageTitle:       (metaTags?.title as string) ?? null,
-          metaDescription: (metaTags?.description as string) ?? null,
-          h1Count:         (headings?.h1Count as number) ?? null,
-          completedAt:     new Date(),
-        }).where(eq(crawlPagesTable.id, pageRow.id));
-
-        if (overall != null) scores.push(overall);
-        if (perf != null) perfScores.push(perf);
-        if (a11y != null) a11yScores.push(a11y);
-        if (seo != null) seoScores.push(seo);
-        if (completedRun?.bestPracticesScore != null) secScores.push(completedRun.bestPracticesScore);
-        pagesAudited++;
-
-        // Discover more links (only if we haven't hit depth limit)
-        if (item.depth < job.maxDepth) {
-          const links = await extractLinks(normalizedUrl, baseOrigin);
-          for (const link of links) {
-            const norm = link.split("#")[0].replace(/\/$/, "") || link;
-            if (!visited.has(norm)) {
-              queue.push({ url: norm, depth: item.depth + 1 });
+          // Discover more links only if we haven't hit depth limit
+          if (item.depth < job.maxDepth && pagesDiscovered < job.maxPages) {
+            const links = await extractLinks(normalizedUrl, baseOrigin);
+            for (const link of links) {
+              const norm = normalizeUrl(link);
+              if (!visited.has(norm) && pagesDiscovered + inflight.length < job.maxPages) {
+                const child = { url: norm, depth: item.depth + 1 };
+                const p = processPage(child).finally(() => {
+                  const idx = inflight.indexOf(p);
+                  if (idx !== -1) inflight.splice(idx, 1);
+                });
+                inflight.push(p);
+              }
             }
           }
+        } catch (err) {
+          pagesFailed++;
+          await db.update(crawlPagesTable).set({
+            status:       "failed",
+            errorMessage: err instanceof Error ? err.message : String(err),
+            completedAt:  new Date(),
+          }).where(eq(crawlPagesTable.id, pageRow.id));
+          logger.warn({ crawlJobId, url: normalizedUrl, err }, "Crawl: page audit failed");
         }
-      } catch (err) {
-        pagesFailed++;
-        await db.update(crawlPagesTable).set({
-          status:      "failed",
-          errorMessage: err instanceof Error ? err.message : String(err),
-          completedAt: new Date(),
-        }).where(eq(crawlPagesTable.id, pageRow.id));
-        logger.warn({ crawlJobId, url: normalizedUrl, err }, "Crawl: page audit failed");
+      } finally {
+        sem.release();
+        // Update job progress
+        await db.update(crawlJobsTable).set({
+          pagesDiscovered,
+          pagesAudited,
+          pagesFailed,
+        }).where(eq(crawlJobsTable.id, crawlJobId)).catch(() => {});
       }
+    };
 
-      // Update job progress
-      await db.update(crawlJobsTable).set({
-        pagesDiscovered,
-        pagesAudited,
-        pagesFailed,
-      }).where(eq(crawlJobsTable.id, crawlJobId));
+    // Drain the initial BFS queue within maxPages
+    while (queue.length > 0 && pagesDiscovered < job.maxPages) {
+      const item = queue.shift()!;
+      const norm = normalizeUrl(item.url);
+      if (visited.has(norm)) continue;
+
+      const p = processPage(item).finally(() => {
+        const idx = inflight.indexOf(p);
+        if (idx !== -1) inflight.splice(idx, 1);
+      });
+      inflight.push(p);
+
+      // Throttle: wait if we've hit the concurrency limit
+      if (inflight.length >= concurrencyLimit) {
+        await Promise.race(inflight);
+      }
     }
 
-    const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+    // Wait for all in-flight audits to finish
+    await Promise.all(inflight);
+
+    const avg = (arr: number[]) =>
+      arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 
     await db.update(crawlJobsTable).set({
       status:          "completed",
@@ -235,9 +350,10 @@ export async function runCrawlJob(crawlJobId: number): Promise<void> {
       pagesAudited,
       pagesFailed,
       overallScore:    avg(scores),
-      avgPerformance:  avg(perfScores),
-      avgAccessibility: avg(a11yScores),
-      avgSeo:          avg(seoScores),
+      avgPerformance:  avg(perfSc),
+      avgAccessibility: avg(a11ySc),
+      avgSeo:          avg(seoSc),
+      avgSecurity:     avg(secSc),
     }).where(eq(crawlJobsTable.id, crawlJobId));
 
     logger.info({ crawlJobId, pagesAudited, pagesDiscovered }, "Crawl job completed");

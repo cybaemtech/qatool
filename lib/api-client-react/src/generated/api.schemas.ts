@@ -454,6 +454,8 @@ export const ScreenshotDeviceType = {
 export interface Screenshot {
   id: number;
   auditRunId: number;
+  /** @nullable */
+  crawlPageId?: number | null;
   deviceType: ScreenshotDeviceType;
   dataUrl: string;
   createdAt: string;
@@ -655,6 +657,30 @@ export interface ScheduleRunResult {
   message: string;
 }
 
+export type CrawlJobProgressStatus = typeof CrawlJobProgressStatus[keyof typeof CrawlJobProgressStatus];
+
+
+export const CrawlJobProgressStatus = {
+  pending: 'pending',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+  cancelled: 'cancelled',
+} as const;
+
+export interface CrawlJobProgress {
+  status: CrawlJobProgressStatus;
+  pagesDiscovered: number;
+  pagesAudited: number;
+  pagesFailed: number;
+  maxPages: number;
+  percentComplete: number;
+  /** @nullable */
+  startedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+}
+
 export type CrawlJobStatus = typeof CrawlJobStatus[keyof typeof CrawlJobStatus];
 
 
@@ -676,6 +702,7 @@ export interface CrawlJob {
   startUrl: string;
   maxPages: number;
   maxDepth: number;
+  concurrencyLimit?: number;
   respectRobotsTxt?: boolean;
   discoverSitemap?: boolean;
   status: CrawlJobStatus;
@@ -706,6 +733,7 @@ export interface CrawlJobInput {
   startUrl: string;
   maxPages?: number;
   maxDepth?: number;
+  concurrencyLimit?: number;
   respectRobotsTxt?: boolean;
   discoverSitemap?: boolean;
 }
@@ -743,6 +771,8 @@ export interface CrawlPage {
   accessibilityScore?: number | null;
   /** @nullable */
   seoScore?: number | null;
+  /** @nullable */
+  bestPracticesScore?: number | null;
   /** @nullable */
   securityScore?: number | null;
   /** @nullable */
@@ -828,7 +858,22 @@ status?: string;
 
 export type ListCrawlJobsParams = {
 projectId?: number;
+auditRunId?: number;
 };
+
+export type ListCrawlJobScreenshotsParams = {
+pageId?: number;
+deviceType?: ListCrawlJobScreenshotsDeviceType;
+};
+
+export type ListCrawlJobScreenshotsDeviceType = typeof ListCrawlJobScreenshotsDeviceType[keyof typeof ListCrawlJobScreenshotsDeviceType];
+
+
+export const ListCrawlJobScreenshotsDeviceType = {
+  desktop: 'desktop',
+  tablet: 'tablet',
+  mobile: 'mobile',
+} as const;
 
 export type GetAnalyticsTrendsParams = {
 projectId?: number;

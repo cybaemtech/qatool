@@ -30,6 +30,8 @@ export interface CrawlPage {
   /** @nullable */
   seoScore?: number | null;
   /** @nullable */
+  bestPracticesScore?: number | null;
+  /** @nullable */
   securityScore?: number | null;
   /** @nullable */
   pageSizeBytes?: number | null;

@@ -1,0 +1,107 @@
+Implement a production-ready Website Crawler that extends the existing QA Automation Portal without breaking any existing functionality.
+
+Goal:
+Instead of auditing only the homepage, automatically discover and audit all important internal pages of a website.
+
+Requirements:
+
+1. Website Crawling
+- Crawl only the same domain.
+- Respect robots.txt where applicable.
+- Discover internal links recursively.
+- Ignore external domains.
+- Avoid duplicate URLs.
+- Ignore mailto:, tel:, javascript:, anchors (#), logout links and admin URLs.
+- Configurable crawl depth (default 2).
+- Configurable maximum pages (default 25).
+
+2. Page Management
+For every discovered page store:
+- URL
+- Page title
+- HTTP status
+- Parent page
+- Crawl depth
+- Discovery timestamp
+
+Create appropriate database tables and API endpoints.
+
+3. Per-Page Audit
+Run the existing audit pipeline independently for every discovered page:
+- Lighthouse
+- Accessibility
+- SEO
+- Security
+- Network
+- Console Errors
+- Broken Links
+- Technology Detection
+
+Reuse the existing scanners wherever possible.
+
+4. Screenshot Capture
+For every page capture:
+- Desktop screenshot
+- Tablet screenshot
+- Mobile screenshot
+
+Support:
+- Viewport screenshots
+- Optional full-page screenshots
+
+Store screenshots linked to both Audit ID and Page ID.
+
+5. UI
+Add a "Pages" section inside Audit Detail.
+
+Display:
+- Page URL
+- Title
+- Audit Status
+- Overall Score
+- Performance
+- Accessibility
+- SEO
+- Best Practices
+
+Clicking a page opens its detailed audit and screenshot gallery.
+
+6. Screenshot Gallery
+Allow:
+- Filter by page
+- Filter by device
+- Previous / Next navigation
+- Full-screen preview
+
+Replace device-icon placeholders with real thumbnail previews.
+
+7. Reports
+Include page-level summaries in:
+- PDF Export
+- JSON Export
+
+8. Performance
+Run page audits with a configurable concurrency limit.
+Show progress while crawling and auditing.
+
+9. Reliability
+Handle:
+- Timeouts
+- Redirect loops
+- Crawl failures
+- Broken pages
+- Partial audit failures
+
+Continue auditing remaining pages even if one page fails.
+
+10. Validation
+Run the crawler against a public website and verify:
+- Pages discovered correctly
+- Audits generated
+- Screenshots captured
+- Reports generated
+- Existing homepage audit functionality remains unchanged
+
+Do not redesign the UI.
+Reuse the current architecture, API structure, database patterns and audit engine.
+Focus on maintainability, production readiness and backward compatibility.

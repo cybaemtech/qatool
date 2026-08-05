@@ -43,9 +43,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
-import { Globe, Plus, Trash2, ChevronDown, RefreshCw, CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
+import { Globe, Plus, Trash2, ChevronDown, RefreshCw, CheckCircle2, XCircle, Clock, Loader2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 const STATUS_COLORS: Record<string, string> = {
   pending:   "bg-gray-100 text-gray-700 border-gray-200",
@@ -177,6 +178,13 @@ function CrawlJobRow({ job, onDelete }: { job: CrawlJob; onDelete: (id: number) 
               {job.errorMessage && (
                 <div className="text-red-600"><span className="font-medium">Error: </span>{job.errorMessage}</div>
               )}
+            </div>
+            <div className="flex justify-end pt-1">
+              <Link href={`/crawl-jobs/${job.id}`} onClick={e => e.stopPropagation()}>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                  <ExternalLink className="h-3 w-3" />View Details
+                </Button>
+              </Link>
             </div>
             {(job.status === "completed" || job.status === "running") && (
               <CrawlJobDetail jobId={job.id} />

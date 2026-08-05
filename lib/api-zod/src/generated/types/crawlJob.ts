@@ -17,6 +17,7 @@ export interface CrawlJob {
   startUrl: string;
   maxPages: number;
   maxDepth: number;
+  concurrencyLimit?: number;
   respectRobotsTxt?: boolean;
   discoverSitemap?: boolean;
   status: CrawlJobStatus;

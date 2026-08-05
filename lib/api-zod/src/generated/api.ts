@@ -572,6 +572,7 @@ export const ListScreenshotsQueryParams = zod.object({
 export const ListScreenshotsResponseItem = zod.object({
   "id": zod.number(),
   "auditRunId": zod.number(),
+  "crawlPageId": zod.number().nullish(),
   "deviceType": zod.enum(['desktop', 'tablet', 'mobile']),
   "dataUrl": zod.string(),
   "createdAt": zod.coerce.date()
@@ -766,7 +767,8 @@ export const GetScheduledAuditHistoryResponse = zod.array(GetScheduledAuditHisto
  * @summary List crawl jobs
  */
 export const ListCrawlJobsQueryParams = zod.object({
-  "projectId": zod.coerce.number().optional()
+  "projectId": zod.coerce.number().optional(),
+  "auditRunId": zod.coerce.number().optional()
 })
 
 export const ListCrawlJobsResponseItem = zod.object({
@@ -777,6 +779,7 @@ export const ListCrawlJobsResponseItem = zod.object({
   "startUrl": zod.string(),
   "maxPages": zod.number(),
   "maxDepth": zod.number(),
+  "concurrencyLimit": zod.number().optional(),
   "respectRobotsTxt": zod.boolean().optional(),
   "discoverSitemap": zod.boolean().optional(),
   "status": zod.enum(['pending', 'running', 'completed', 'failed', 'cancelled']),
@@ -804,6 +807,7 @@ export const CreateCrawlJobBody = zod.object({
   "startUrl": zod.string(),
   "maxPages": zod.number().optional(),
   "maxDepth": zod.number().optional(),
+  "concurrencyLimit": zod.number().optional(),
   "respectRobotsTxt": zod.boolean().optional(),
   "discoverSitemap": zod.boolean().optional()
 })
@@ -824,6 +828,7 @@ export const GetCrawlJobResponse = zod.object({
   "startUrl": zod.string(),
   "maxPages": zod.number(),
   "maxDepth": zod.number(),
+  "concurrencyLimit": zod.number().optional(),
   "respectRobotsTxt": zod.boolean().optional(),
   "discoverSitemap": zod.boolean().optional(),
   "status": zod.enum(['pending', 'running', 'completed', 'failed', 'cancelled']),
@@ -871,6 +876,7 @@ export const ListCrawlPagesResponseItem = zod.object({
   "performanceScore": zod.number().nullish(),
   "accessibilityScore": zod.number().nullish(),
   "seoScore": zod.number().nullish(),
+  "bestPracticesScore": zod.number().nullish(),
   "securityScore": zod.number().nullish(),
   "pageSizeBytes": zod.number().nullish(),
   "startedAt": zod.coerce.date().nullish(),
@@ -878,6 +884,48 @@ export const ListCrawlPagesResponseItem = zod.object({
   "createdAt": zod.coerce.date()
 })
 export const ListCrawlPagesResponse = zod.array(ListCrawlPagesResponseItem)
+
+
+/**
+ * @summary Get live crawl job progress counters
+ */
+export const GetCrawlJobProgressParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetCrawlJobProgressResponse = zod.object({
+  "status": zod.enum(['pending', 'running', 'completed', 'failed', 'cancelled']),
+  "pagesDiscovered": zod.number(),
+  "pagesAudited": zod.number(),
+  "pagesFailed": zod.number(),
+  "maxPages": zod.number(),
+  "percentComplete": zod.number(),
+  "startedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary List screenshots for a crawl job (optionally filtered by page or device)
+ */
+export const ListCrawlJobScreenshotsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListCrawlJobScreenshotsQueryParams = zod.object({
+  "pageId": zod.coerce.number().optional(),
+  "deviceType": zod.enum(['desktop', 'tablet', 'mobile']).optional()
+})
+
+export const ListCrawlJobScreenshotsResponseItem = zod.object({
+  "id": zod.number(),
+  "auditRunId": zod.number(),
+  "crawlPageId": zod.number().nullish(),
+  "deviceType": zod.enum(['desktop', 'tablet', 'mobile']),
+  "dataUrl": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListCrawlJobScreenshotsResponse = zod.array(ListCrawlJobScreenshotsResponseItem)
 
 
 /**

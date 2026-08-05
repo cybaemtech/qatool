@@ -8,6 +8,8 @@ export const deviceTypeEnum = pgEnum("device_type", ["desktop", "tablet", "mobil
 export const screenshotsTable = pgTable("screenshots", {
   id: serial("id").primaryKey(),
   auditRunId: integer("audit_run_id").notNull().references(() => auditRunsTable.id, { onDelete: "cascade" }),
+  // Optional link to a crawl page (set when screenshot was captured as part of a crawl job)
+  crawlPageId: integer("crawl_page_id"),
   deviceType: deviceTypeEnum("device_type").notNull(),
   dataUrl: text("data_url").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),

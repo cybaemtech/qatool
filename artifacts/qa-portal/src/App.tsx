@@ -34,6 +34,7 @@ import AiFileAnalysis from "@/pages/ai-file-analysis";
 import Feedback from "@/pages/feedback";
 import Analytics from "@/pages/analytics";
 import Crawler from "@/pages/crawler";
+import CrawlJobDetail from "@/pages/crawl-job-detail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -182,6 +183,12 @@ function AppRouter() {
       <Route path="/analytics">
         <ProtectedRoute>
           <Layout><Analytics /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/crawl-jobs/:id">
+        <ProtectedRoute>
+          <Layout><CrawlJobDetail /></Layout>
         </ProtectedRoute>
       </Route>
 

@@ -11,6 +11,7 @@ import {
   useGetProject,
   useGetProjectHealthScore,
   useListAudits,
+  useListCrawlJobs,
   getGetAuditAiAnalysisQueryKey,
   getGetProjectQueryKey,
   getGetProjectHealthScoreQueryKey,
@@ -365,6 +366,12 @@ export default function AuditDetail() {
       queryKey: getGetAuditAiAnalysisQueryKey(auditId),
     },
   });
+
+  // Check if this audit is part of a crawl job
+  const { data: parentCrawlJobs = [] } = useListCrawlJobs({ auditRunId: auditId }, {
+    query: { enabled: !!auditId },
+  });
+  const parentCrawlJob = parentCrawlJobs[0] ?? null;
 
   // Fetch sibling audits for the same project — used for historical comparison
   const { data: projectAudits = [] } = useListAudits({ projectId: audit?.projectId ?? 0 }, {
@@ -1632,10 +1639,17 @@ export default function AuditDetail() {
                     {screenshots.map(s => (
                       <button key={s.id} onClick={() => setScreenshotDevice(s.deviceType)}
                         className={cn("rounded-lg border-2 overflow-hidden transition-all duration-200", screenshotDevice === s.deviceType ? "border-primary shadow-sm" : "border-border hover:border-muted-foreground")}>
-                        <div className="aspect-video bg-muted/50 flex flex-col items-center justify-center gap-1">
-                          {s.deviceType === "desktop" && <Monitor className="h-4 w-4 text-muted-foreground" />}
-                          {s.deviceType === "tablet" && <Tablet className="h-4 w-4 text-muted-foreground" />}
-                          {s.deviceType === "mobile" && <Smartphone className="h-4 w-4 text-muted-foreground" />}
+                        <div className={cn("w-full bg-muted/50 overflow-hidden",
+                          s.deviceType === "mobile" ? "aspect-[9/16]" : s.deviceType === "tablet" ? "aspect-[4/3]" : "aspect-video")}>
+                          {s.dataUrl
+                            ? <img src={s.dataUrl} alt={`${s.deviceType} thumbnail`} className="w-full h-full object-cover" />
+                            : <div className="flex flex-col items-center justify-center h-full gap-1">
+                                {s.deviceType === "desktop" && <Monitor className="h-4 w-4 text-muted-foreground" />}
+                                {s.deviceType === "tablet" && <Tablet className="h-4 w-4 text-muted-foreground" />}
+                                {s.deviceType === "mobile" && <Smartphone className="h-4 w-4 text-muted-foreground" />}
+                              </div>}
+                        </div>
+                        <div className="py-0.5 text-center">
                           <span className="text-[10px] text-muted-foreground capitalize">{s.deviceType}</span>
                         </div>
                       </button>

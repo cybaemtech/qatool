@@ -8,4 +8,5 @@
 
 export type ListCrawlJobsParams = {
 projectId?: number;
+auditRunId?: number;
 };

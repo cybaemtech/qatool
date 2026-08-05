@@ -907,6 +907,10 @@ paths:
           in: query
           schema:
             type: integer
+        - name: auditRunId
+          in: query
+          schema:
+            type: integer
       responses:
         "200":
           description: List of crawl jobs
@@ -1000,6 +1004,65 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CrawlPage"
+
+  /crawl-jobs/{id}/progress:
+    get:
+      operationId: getCrawlJobProgress
+      tags: [crawl-jobs]
+      summary: Get live crawl job progress counters
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Crawl job progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrawlJobProgress"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /crawl-jobs/{id}/screenshots:
+    get:
+      operationId: listCrawlJobScreenshots
+      tags: [crawl-jobs]
+      summary: List screenshots for a crawl job (optionally filtered by page or device)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: pageId
+          in: query
+          schema:
+            type: integer
+        - name: deviceType
+          in: query
+          schema:
+            type: string
+            enum: [desktop, tablet, mobile]
+      responses:
+        "200":
+          description: List of screenshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Screenshot"
 
   # Analytics
   /analytics/trends:
@@ -1588,6 +1651,8 @@ components:
           type: integer
         auditRunId:
           type: integer
+        crawlPageId:
+          type: ["integer", "null"]
         deviceType:
           type: string
           enum: [desktop, tablet, mobile]
@@ -1797,6 +1862,30 @@ components:
           type: string
 
     # Crawl Jobs
+    CrawlJobProgress:
+      type: object
+      required: [status, pagesDiscovered, pagesAudited, pagesFailed, maxPages, percentComplete]
+      properties:
+        status:
+          type: string
+          enum: [pending, running, completed, failed, cancelled]
+        pagesDiscovered:
+          type: integer
+        pagesAudited:
+          type: integer
+        pagesFailed:
+          type: integer
+        maxPages:
+          type: integer
+        percentComplete:
+          type: integer
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        completedAt:
+          type: ["string", "null"]
+          format: date-time
+
     CrawlJob:
       type: object
       required: [id, projectId, startUrl, maxPages, maxDepth, status, pagesDiscovered, pagesAudited, pagesFailed, createdAt]
@@ -1814,6 +1903,8 @@ components:
         maxPages:
           type: integer
         maxDepth:
+          type: integer
+        concurrencyLimit:
           type: integer
         respectRobotsTxt:
           type: boolean
@@ -1862,6 +1953,8 @@ components:
           type: integer
         maxDepth:
           type: integer
+        concurrencyLimit:
+          type: integer
         respectRobotsTxt:
           type: boolean
         discoverSitemap:
@@ -1897,6 +1990,8 @@ components:
         accessibilityScore:
           type: ["number", "null"]
         seoScore:
+          type: ["number", "null"]
+        bestPracticesScore:
           type: ["number", "null"]
         securityScore:
           type: ["number", "null"]
