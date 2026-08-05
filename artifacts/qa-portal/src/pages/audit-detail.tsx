@@ -16,6 +16,7 @@ import {
   getGetProjectQueryKey,
   getGetProjectHealthScoreQueryKey,
   getListAuditsQueryKey,
+  getListCrawlJobsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -369,7 +370,7 @@ export default function AuditDetail() {
 
   // Check if this audit is part of a crawl job
   const { data: parentCrawlJobs = [] } = useListCrawlJobs({ auditRunId: auditId }, {
-    query: { enabled: !!auditId },
+    query: { enabled: !!auditId, queryKey: getListCrawlJobsQueryKey({ auditRunId: auditId }) },
   });
   const parentCrawlJob = parentCrawlJobs[0] ?? null;
 
