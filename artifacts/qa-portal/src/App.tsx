@@ -31,6 +31,7 @@ import TestManagement from "@/pages/test-management";
 import TeamCollaboration from "@/pages/team-collaboration";
 import AiCopilot from "@/pages/ai-copilot";
 import AiFileAnalysis from "@/pages/ai-file-analysis";
+import CodeAnalysis from "@/pages/code-analysis";
 import Feedback from "@/pages/feedback";
 import Analytics from "@/pages/analytics";
 import Crawler from "@/pages/crawler";
@@ -159,6 +160,12 @@ function AppRouter() {
       <Route path="/ai-file-analysis">
         <ProtectedRoute>
           <Layout><AiFileAnalysis /></Layout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/code-analysis">
+        <ProtectedRoute>
+          <Layout><CodeAnalysis /></Layout>
         </ProtectedRoute>
       </Route>
 

@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useListNotifications, getListNotificationsQueryKey } from "@workspace/api-client-react";
-import { Loader2, Activity, LayoutDashboard, Folder, Bug, FileText, Users, Settings, LogOut, CalendarClock, Bell, Briefcase, Plug, FileBarChart2, Rocket, Zap, ShieldCheck, Network, ClipboardList, MessageSquare, Bot, ScanSearch, Lightbulb } from "lucide-react";
+import { Loader2, Activity, LayoutDashboard, Folder, Bug, FileText, Users, Settings, LogOut, CalendarClock, Bell, Briefcase, Plug, FileBarChart2, Rocket, Zap, ShieldCheck, Network, ClipboardList, MessageSquare, Bot, ScanSearch, Lightbulb, FileCode2 } from "lucide-react";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -63,6 +63,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Test Management', href: '/test-management', icon: ClipboardList },
     { name: 'AI QA Copilot', href: '/ai-copilot', icon: Bot },
     { name: 'AI File Analysis', href: '/ai-file-analysis', icon: ScanSearch },
+    { name: 'Code Analysis', href: '/code-analysis', icon: FileCode2 },
     { name: 'Team Collaboration', href: '/team-collaboration', icon: MessageSquare },
     { name: 'Feedback & Ideas', href: '/feedback', icon: Lightbulb },
     { name: 'Schedules', href: '/schedules', icon: CalendarClock },

@@ -13,6 +13,7 @@ import notificationsRouter from "./notifications";
 import feedbackRouter from "./feedback";
 import crawlJobsRouter from "./crawl-jobs";
 import analyticsRouter from "./analytics";
+import codeAnalysisRouter from "./code-analysis";
 import path from "path";
 import fs from "fs";
 
@@ -32,6 +33,7 @@ router.use(notificationsRouter);
 router.use(feedbackRouter);
 router.use(crawlJobsRouter);
 router.use(analyticsRouter);
+router.use(codeAnalysisRouter);
 
 // Serve generated report files
 const workspaceRoot = process.cwd().endsWith(path.join("artifacts", "api-server"))

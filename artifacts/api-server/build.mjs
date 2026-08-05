@@ -102,6 +102,14 @@ async function buildAll() {
       "puppeteer",
       "puppeteer-core",
       "electron",
+      // ESLint has dynamic requires and complex module resolution
+      "eslint",
+      "@typescript-eslint/parser",
+      "@typescript-eslint/typescript-estree",
+      "@typescript-eslint/visitor-keys",
+      "@typescript-eslint/scope-manager",
+      "unzipper",
+      "multer",
       // pdfkit ships CJS-only with binary font data and dynamic require() calls
       // that break esbuild's ESM bundler; run it from node_modules at runtime.
       "pdfkit",

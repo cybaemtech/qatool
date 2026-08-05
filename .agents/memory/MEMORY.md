@@ -5,3 +5,4 @@
 - [Feedback route uses plain helpers not Zod](feedback-route-pattern.md) — feedback.ts uses parseCreateSuggestion/parseUpdateSuggestion helpers (not Zod schemas); insert needs any-cast due to category string vs union type mismatch.
 - [Scanners are all real](real-scanners.md) — all 10 scanners use Playwright/Lighthouse/axe-core; stability test: 3 runs on example.com returned identical scores (overall=78, perf≈100, a11y=92, seo=64, bp=100).
 - [Crawler implementation notes](crawler-implementation.md) — drain-loop fix, pdfkit externalize rule, crawl banner location, histData crash guard.
+- [Code Analysis feature](code-analysis-feature.md) — ESLint v8 Linter class, ts-parser registration, externals in build.mjs, direct fetch (no codegen) in frontend.
