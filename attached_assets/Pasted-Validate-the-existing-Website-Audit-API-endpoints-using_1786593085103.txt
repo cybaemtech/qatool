@@ -1,0 +1,84 @@
+Validate the existing Website Audit API endpoints using Postman-style HTTP requests.
+
+IMPORTANT:
+- Do NOT add any features.
+- Do NOT redesign anything.
+- Do NOT modify the database.
+- Do NOT inspect or rewrite the architecture.
+- Do NOT run a broad repository audit.
+- Do NOT create new API endpoints.
+- Do NOT change existing API behavior unless a real bug is proven.
+- Focus ONLY on validating the API requests currently used by the Website Audit page.
+
+First identify the GET and POST requests actually used by the existing Audit page / audit flow.
+
+For EACH existing Audit API endpoint, validate it with an external HTTP/Postman-style request.
+
+For every GET endpoint verify:
+1. HTTP method is correct
+2. URL/path is correct
+3. Required authentication is accepted
+4. Required query/path parameters work
+5. HTTP status code is correct
+6. Response is valid JSON where expected
+7. Response fields contain the data expected by the frontend
+8. Error handling works for invalid/missing parameters
+
+For every POST endpoint verify:
+1. HTTP method is correct
+2. URL/path is correct
+3. Authorization works
+4. Content-Type is correct
+5. Required request body fields are accepted
+6. HTTP status code is correct
+7. Response JSON is valid
+8. Returned audit/job/project ID is valid where applicable
+9. The operation actually performs the expected action
+10. No unexpected 401/403/404/500 errors occur
+
+Use the existing demo account:
+Email: admin@qa.dev
+Password: password
+
+Use the existing application and database.
+Do NOT reset or reseed the database.
+
+For the audit execution endpoint, use:
+https://example.com
+
+Also verify the complete API sequence used by the Audit page, for example:
+Login → create/start audit → poll/get audit → get audit details → get bugs/issues → screenshots → AI summary → JSON export → PDF export.
+
+Do not assume endpoint names. Use the actual endpoints currently used by the Audit page.
+
+For each endpoint return:
+
+METHOD
+ENDPOINT
+REQUEST
+STATUS
+RESULT
+PASS/FAIL
+
+If an endpoint fails:
+- Determine whether it is a real runtime/API bug.
+- Fix ONLY that bug.
+- Re-run that endpoint once.
+- Do not make unrelated changes.
+
+At the end return ONLY:
+
+1. Total endpoints tested
+2. GET endpoints: PASS/FAIL
+3. POST endpoints: PASS/FAIL
+4. Authentication: PASS/FAIL
+5. Audit execution API: PASS/FAIL
+6. Audit retrieval API: PASS/FAIL
+7. Screenshot API: PASS/FAIL
+8. AI Summary API: PASS/FAIL
+9. JSON export API: PASS/FAIL
+10. PDF export API: PASS/FAIL
+11. Any bugs fixed
+12. Final API production readiness: READY / NOT READY
+
+Do not perform any additional feature work.
