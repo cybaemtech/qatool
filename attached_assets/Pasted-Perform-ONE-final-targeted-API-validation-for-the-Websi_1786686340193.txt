@@ -1,0 +1,56 @@
+Perform ONE final targeted API validation for the Website Audit flow.
+
+The previous API test validated 15 endpoints successfully, but the required audit execution against https://example.com was NOT actually tested because the API requires an existing projectId and no existing project used that URL.
+
+Now complete ONLY this missing validation.
+
+1. Create ONE temporary project whose URL is:
+   https://example.com
+
+2. Use that project's ID to execute the existing audit API.
+
+3. Validate the complete API sequence:
+   - Authentication
+   - Project creation
+   - POST audit/start
+   - Audit completion/status polling
+   - GET audit details
+   - Screenshots
+   - AI Summary
+   - Bugs/issues
+   - PDF export
+
+4. Verify that the returned audit/project IDs remain consistent across the requests.
+
+5. Verify that the response data shown by the Audit page corresponds to the same audit.
+
+6. Do NOT add any new API endpoints.
+7. Do NOT redesign the UI.
+8. Do NOT change the existing API implementation unless a real runtime bug is found.
+9. Do NOT reseed or reset the database.
+10. Do NOT inspect or redesign the architecture.
+11. Do NOT perform another broad repository audit.
+
+JSON export:
+- Do NOT create a JSON API.
+- Confirm only whether the existing client-side JSON export correctly uses the completed audit data.
+
+After validation, delete the temporary example.com project and its test audit data if the existing application supports normal deletion. Do not delete any pre-existing user/project/audit data.
+
+Return ONLY:
+
+- Authentication: PASS/FAIL
+- Temporary project creation: PASS/FAIL
+- Audit execution for https://example.com: PASS/FAIL
+- Audit completion: PASS/FAIL
+- Audit retrieval: PASS/FAIL
+- Screenshots: PASS/FAIL
+- AI Summary: PASS/FAIL
+- Bugs/issues retrieval: PASS/FAIL
+- PDF export: PASS/FAIL
+- JSON export: PASS/FAIL
+- Any real bug found/fixed
+- Temporary test data cleaned up: YES/NO
+- Final Website Audit API status: READY / NOT READY
+
+Stop immediately after this validation.
