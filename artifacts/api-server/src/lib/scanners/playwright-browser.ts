@@ -8,28 +8,28 @@
 //   3. Playwright's own downloaded binary under ~/workspace/.cache/ms-playwright
 
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import fs from "fs";
 import { spawnSync } from "child_process";
-import path from "path";
-import os from "os";
 
 function resolveChromiumPath(): string | undefined {
   // 1. Explicit override
   if (process.env.PLAYWRIGHT_BROWSER_PATH) return process.env.PLAYWRIGHT_BROWSER_PATH;
 
-  // 2. System Chromium from PATH (pkgs.chromium via Nix)
+  // 2. Playwright's platform-aware downloaded browser.
+  const bundled = chromium.executablePath();
+  if (fs.existsSync(bundled)) return bundled;
+
+  // 3. System Chromium from PATH (pkgs.chromium via Nix)
   try {
-    const result = spawnSync("which", ["chromium"], { encoding: "utf8" });
+    const command = process.platform === "win32" ? "where" : "which";
+    const result = spawnSync(command, ["chromium"], { encoding: "utf8" });
     const found = result.stdout?.trim();
     if (found) return found;
   } catch {
     // ignore
   }
 
-  // 3. Playwright's downloaded Chromium (installed via `playwright install chromium`)
-  const playwrightCache =
-    process.env.PLAYWRIGHT_BROWSERS_PATH ??
-    path.join(os.homedir(), "workspace", ".cache", "ms-playwright");
-  return path.join(playwrightCache, "chromium-1234", "chrome-linux64", "chrome");
+  return undefined;
 }
 
 export const CHROMIUM_EXECUTABLE = resolveChromiumPath();

@@ -1,0 +1,684 @@
+Upgrade the existing Website Audit experience into a comprehensive Full Website QA & Health Analysis system.
+
+IMPORTANT:
+- Build on the EXISTING audit engine, crawler, scanners, screenshot system, reports, API and database.
+- Do NOT create a separate parallel audit system.
+- Do NOT remove or break any existing functionality.
+- Do NOT redesign the entire application.
+- Keep the existing visual language and UI components.
+- Extend the existing Audit Detail page and existing Website Crawler functionality.
+- Reuse existing scanners and real data wherever possible.
+- Do NOT use fake, placeholder, hardcoded or simulated audit findings.
+- Every displayed finding must come from actual collected audit/crawler data.
+- Do not claim a check passed if the underlying scanner does not actually perform that check.
+- If a requested check is not technically supported yet, show "Not checked" rather than inventing a result.
+- Do not perform destructive actions against audited websites.
+- Do not automatically submit real forms, place orders, send emails, or perform authenticated actions.
+- Respect same-domain crawling, configurable page limits, timeouts and concurrency.
+
+==================================================
+1. FULL WEBSITE AUDIT
+==================================================
+
+Change the audit experience so that a user can audit:
+
+A. Homepage only
+B. Entire website
+
+For "Entire Website", use the existing crawler to discover pages and run the existing audit pipeline against each discovered page.
+
+Example:
+
+https://cybaemtech.com/
+
+should discover relevant same-domain pages such as:
+
+/
+ /about
+ /services
+ /portfolio
+ /contact
+ etc.
+
+Do NOT hardcode these paths.
+
+Use actual crawler discovery.
+
+Add configurable:
+- Maximum pages
+- Crawl depth
+- Concurrency
+- Timeout
+
+Default values should be safe for Playwright/Lighthouse resource usage.
+
+Show crawl progress:
+
+"Discovering pages..."
+"Auditing page 4 of 18..."
+"Capturing screenshots..."
+"Generating website summary..."
+
+==================================================
+2. WEBSITE-LEVEL OVERVIEW
+==================================================
+
+Extend Audit Detail with a Website Health Overview.
+
+Show:
+
+- Overall Website Score
+- Performance
+- Accessibility
+- SEO
+- Security
+- Best Practices
+- Broken Links
+- Console / JavaScript
+- Responsive / Mobile
+- Pages scanned
+- Pages passed
+- Pages needing attention
+- Critical issues
+- High issues
+- Medium issues
+- Low issues
+
+IMPORTANT:
+Only show a score if that score is actually calculated from real collected data.
+
+Do not invent scoring formulas.
+
+Where a category is not currently supported by the audit engine, clearly show:
+"Not checked"
+
+==================================================
+3. PAGE-BY-PAGE ANALYSIS
+==================================================
+
+Add a prominent "Pages" section to the Audit Detail page.
+
+Display every discovered page.
+
+For each page show:
+
+- URL
+- Page title
+- Overall score
+- Performance score
+- Accessibility score
+- SEO score
+- Best Practices score
+- Security result if available
+- Issue count
+- Severity breakdown
+- Audit status
+- Screenshot availability
+
+Allow:
+
+- Search pages
+- Filter by score
+- Filter by issue severity
+- Filter by audit status
+- Sort by score
+- Sort by issue count
+- Sort by URL
+
+Clicking a page must open its detailed page audit.
+
+Do NOT create fake page results.
+
+==================================================
+4. PAGE DETAIL
+==================================================
+
+When the user opens an individual page, show a complete audit for THAT PAGE.
+
+Sections:
+
+Performance
+Accessibility
+SEO
+Security
+Best Practices
+Broken Links
+Console / JavaScript Errors
+Responsive / Device Analysis
+Technology Detection
+Images / Media
+HTML / Content checks
+Screenshots
+Findings
+Recommendations
+
+Reuse the existing scanner results wherever they already exist.
+
+==================================================
+5. PERFORMANCE
+==================================================
+
+For each audited page, expose real collected metrics where available:
+
+- Performance score
+- FCP
+- LCP
+- CLS
+- TBT
+- Speed Index
+- Load timing
+- Resource count
+- Resource failures
+- Large resources
+- Render-blocking resources
+- Unused CSS/JS where Lighthouse provides it
+- Image optimization opportunities
+- Third-party resources
+
+Do not calculate fake metrics.
+
+If Lighthouse does not provide a metric, show "Not available".
+
+==================================================
+6. ACCESSIBILITY
+==================================================
+
+Display real axe/Lighthouse accessibility findings.
+
+For each finding show:
+
+- Severity
+- Rule/check
+- Description
+- Affected page
+- Affected DOM element
+- CSS selector where available
+- HTML snippet where safely available
+- Help/recommendation
+- Number of affected elements
+
+Examples of detectable categories include:
+
+- Missing labels
+- Missing alt text
+- Contrast
+- ARIA problems
+- Heading structure
+- Buttons/links
+- Duplicate IDs
+- Form accessibility
+- Semantic issues
+
+Do not claim manual keyboard testing or manual WCAG compliance unless actually tested.
+
+==================================================
+7. SEO
+==================================================
+
+For every page expose real checks where supported:
+
+- Title
+- Title length
+- Meta description
+- Meta description length
+- Canonical
+- Robots directives
+- Indexability
+- H1
+- Heading hierarchy
+- Duplicate titles
+- Missing metadata
+- Image alt attributes
+- Internal links
+- External links
+- Structured data
+- Open Graph metadata
+- Twitter/X metadata
+- HTTPS
+- Sitemap/robots.txt information where applicable
+
+Show the exact affected page/resource.
+
+==================================================
+8. SECURITY
+==================================================
+
+Add/display security checks that can be safely performed without intrusive penetration testing.
+
+Where technically supported, check:
+
+- HTTPS
+- Mixed content
+- HSTS
+- Content-Security-Policy
+- X-Content-Type-Options
+- Frame protection
+- Referrer-Policy
+- Permissions-Policy
+- Cookie security attributes where observable
+- Insecure resources
+- Other existing security scanner findings
+
+Do NOT perform exploitation, brute force, credential attacks or intrusive penetration testing.
+
+If a security check is not implemented by the current scanner, show "Not checked".
+
+==================================================
+9. BROKEN LINKS & RESOURCES
+==================================================
+
+Improve the existing broken-link results so they clearly show:
+
+- Source page
+- Target URL
+- Resource type
+- HTTP status
+- Classification
+- Redirect information
+- Error reason
+
+Correct classifications:
+
+200 = Healthy
+301/302 = Redirect
+401 = Authentication Required
+403 = Access Restricted
+404 = Broken
+429 = Rate Limited
+5xx = Server Error
+Timeout = Timeout
+Network/DNS failure = Network Error
+
+Do not classify 401, 403 or 429 as 404/broken.
+
+Include broken resources such as images/scripts/stylesheets where the existing scanner can detect them.
+
+==================================================
+10. CONSOLE / JAVASCRIPT ERRORS
+==================================================
+
+For each page show:
+
+- Console errors
+- Console warnings
+- Uncaught exceptions
+- Unhandled promise rejections
+- Failed scripts
+- Failed network/resource requests
+- CORS/network errors where observable
+
+Each issue should include:
+
+- Page URL
+- Error message
+- Resource/source if available
+- Severity
+- Timestamp if available
+
+Do not fabricate source file/line information if the browser does not provide it.
+
+==================================================
+11. RESPONSIVE QA
+==================================================
+
+Use the existing Playwright screenshot system.
+
+For every page capture:
+
+Desktop
+Tablet
+Mobile
+
+Show:
+
+- Real screenshot
+- Viewport dimensions
+- Capture status
+- Any detectable responsive/layout problems
+
+Where technically detectable, check:
+
+- Horizontal overflow
+- Elements outside viewport
+- Broken viewport configuration
+- Major layout overflow
+- Obvious responsive failures
+
+Do not claim visual issues merely from screenshots unless an actual detection rule identifies them.
+
+==================================================
+12. TECHNOLOGY DETECTION
+==================================================
+
+Use the existing technology detection scanner.
+
+Show detected technologies:
+
+- Framework
+- CMS
+- Libraries
+- Analytics
+- CDN
+- Hosting indicators
+- Third-party services
+
+Clearly label this as detected technology and avoid claiming certainty when detection is heuristic.
+
+==================================================
+13. IMAGES / MEDIA
+==================================================
+
+Show real findings for:
+
+- Broken images
+- Missing alt text
+- Oversized images
+- Image dimensions
+- Lazy loading
+- Image optimization opportunities
+- Missing dimensions where detectable
+- Failed media resources
+
+Link each finding to the affected page/resource.
+
+==================================================
+14. HTML / CONTENT QUALITY
+==================================================
+
+Where technically supported, detect:
+
+- Missing viewport
+- Missing language declaration
+- Duplicate IDs
+- Empty links
+- Empty buttons
+- Heading issues
+- Excessive DOM size
+- Invalid/poor HTML patterns detected by existing tooling
+- Missing important metadata
+
+Do not introduce a fake HTML validator just to populate this section.
+
+==================================================
+15. WEBSITE-WIDE VS PAGE-SPECIFIC ISSUES
+==================================================
+
+This is IMPORTANT.
+
+Do not simply duplicate the same issue across every page.
+
+Separate findings into:
+
+A. Website-wide issues
+B. Page-specific issues
+
+Example:
+
+Website-wide:
+"Missing HSTS header across 18 pages"
+
+Page-specific:
+"/contact has 3 accessibility violations"
+
+Aggregate duplicate findings intelligently where the same underlying issue affects multiple pages.
+
+Show:
+
+Affected pages: 18
+
+and allow the user to expand the affected page list.
+
+==================================================
+16. FINDING DETAILS
+==================================================
+
+Every issue should be actionable.
+
+Show:
+
+- Severity
+- Category
+- Description
+- Page URL
+- Affected element/resource
+- Selector if available
+- HTML/code/resource snippet if available
+- Evidence
+- Why it matters
+- Recommended fix
+- Number of affected pages/elements
+
+For developer-relevant errors, show exact information when the underlying tool provides it.
+
+Example:
+
+Page:
+https://example.com/contact
+
+Issue:
+Missing accessible label
+
+Element:
+input[type="email"]
+
+Selector:
+#contact-form input[type="email"]
+
+Do NOT invent line numbers or source files for website findings.
+
+==================================================
+17. WEBSITE HEALTH SUMMARY
+==================================================
+
+Add a Website Health Summary at the top of the Audit Detail page.
+
+Show:
+
+- Overall health score
+- Most affected pages
+- Most common issue categories
+- Critical/high-priority issues
+- Top recommendations
+- Pages requiring attention
+
+If the existing AI Summary is used, make sure it receives ONLY actual collected audit/page data.
+
+AI must NEVER invent:
+- scores
+- findings
+- affected pages
+- metrics
+- errors
+- recommendations presented as detected facts
+
+Clearly distinguish AI recommendations from actual scanner findings.
+
+==================================================
+18. PAGE SCORE AGGREGATION
+==================================================
+
+Create website-level aggregation from actual page results.
+
+Do NOT simply average arbitrary values.
+
+Use a clearly defined, deterministic aggregation method.
+
+Document the aggregation logic in code.
+
+The same aggregated values must be used by:
+
+- Audit Detail
+- Dashboard
+- AI Summary
+- JSON export
+- PDF export
+- API responses
+
+There must be ONE source of truth.
+
+==================================================
+19. EXPORTS
+==================================================
+
+Upgrade existing JSON and PDF exports to include:
+
+Website summary
+Category scores
+Page count
+Page-level scores
+Page-level findings
+Website-wide findings
+Page-specific findings
+Screenshots where practical
+Recommendations
+Severity counts
+
+Do not break existing export functionality.
+
+JSON must contain the complete structured dataset.
+
+PDF should be readable and organized:
+
+1. Website overview
+2. Score summary
+3. Critical/high issues
+4. Website-wide issues
+5. Page summary table
+6. Individual page findings
+7. Screenshots
+8. Recommendations
+
+==================================================
+20. AUDIT PAGE UX
+==================================================
+
+Do not redesign the application.
+
+Extend the existing Audit Detail page with clear sections/tabs:
+
+Overview
+Pages
+Performance
+Accessibility
+SEO
+Security
+Best Practices
+Broken Links
+Console
+Responsive
+Technologies
+Issues
+Screenshots
+Reports
+
+The Pages section should be one of the primary sections.
+
+Use existing components/styles wherever possible.
+
+Add loading, empty and error states.
+
+Never show "No issues found" while data is still loading.
+
+==================================================
+21. DATABASE / API
+==================================================
+
+Extend the existing database/API only where required.
+
+Preserve existing audit records.
+
+Ensure page-level results are correctly linked:
+
+Website Audit
+→ Crawl Job
+→ Crawl Page
+→ Audit Run
+→ Findings
+→ Screenshots
+→ Reports
+
+No orphaned page results.
+
+No duplicate audit records caused by retries.
+
+==================================================
+22. PRODUCTION SAFETY
+==================================================
+
+Respect:
+
+- same-domain crawling
+- max page limit
+- crawl depth
+- concurrency limit
+- per-page timeout
+- overall crawl timeout
+- duplicate URL normalization
+- redirect handling
+- robots.txt rules where configured
+
+Prevent a large website from exhausting server memory.
+
+Do not run all Playwright/Lighthouse audits simultaneously without respecting concurrencyLimit.
+
+==================================================
+23. VALIDATION
+==================================================
+
+After implementation, DO NOT just report that the code was changed.
+
+Run a real end-to-end test against a public website.
+
+Use a small site first so the test is resource-safe.
+
+Verify:
+
+1. Website discovery works
+2. Multiple pages are discovered where available
+3. Every discovered page receives an audit
+4. Page scores are real
+5. Findings are real
+6. Screenshots exist for audited pages
+7. Broken links are classified correctly
+8. Console errors are captured
+9. AI summary uses actual data
+10. Website-level aggregation matches page-level data
+11. Audit Detail renders correctly
+12. Page Detail works
+13. JSON export contains page results
+14. PDF contains page results
+15. Existing homepage-only audit still works
+16. Existing crawler functionality still works
+17. TypeScript/build passes
+18. No runtime errors in browser console
+
+Do not use seeded/mock audit results as proof of functionality.
+
+Use real runtime data from the live website.
+
+==================================================
+FINAL REPORT
+==================================================
+
+At the end provide:
+
+- Features implemented
+- Existing features preserved
+- Scanners actually providing real data
+- Checks currently supported
+- Checks showing "Not checked"
+- Number of pages discovered in the test
+- Number of pages successfully audited
+- Screenshots captured
+- Issues detected
+- Export validation
+- Bugs found/fixed
+- Remaining limitations
+- Production readiness score /10
+
+IMPORTANT:
+Do not claim "everything is covered" unless the underlying implementation actually performs that check.
+
+If something cannot currently be detected reliably, explicitly mark it as "Not checked" instead of generating fake results.
+
+Do not stop after planning. Implement, test, fix real issues found, and provide the final validation report.

@@ -6,8 +6,9 @@
 //           Vital estimates from those measurements.  No Math.random() anywhere.
 
 import * as cheerio from "cheerio";
-import path from "path";
-import os from "os";
+import fs from "fs";
+import { chromium } from "playwright";
+import { spawnSync } from "child_process";
 import type { AuditScanner, AuditContext, PerformanceMetrics } from "../audit-types";
 import { scoreToGrade } from "../scoring-utils";
 
@@ -31,16 +32,15 @@ export interface LighthouseAdapter {
 
 function resolveChromiumForLighthouse(): string | undefined {
   if (process.env.PLAYWRIGHT_BROWSER_PATH) return process.env.PLAYWRIGHT_BROWSER_PATH;
+  const bundled = chromium.executablePath();
+  if (fs.existsSync(bundled)) return bundled;
   try {
-    const { spawnSync } = require("child_process") as typeof import("child_process");
-    const r = spawnSync("which", ["chromium"], { encoding: "utf8" });
+    const command = process.platform === "win32" ? "where" : "which";
+    const r = spawnSync(command, ["chromium"], { encoding: "utf8" });
     const found = r.stdout?.trim();
     if (found) return found;
   } catch { /* ignore */ }
-  const cache =
-    process.env.PLAYWRIGHT_BROWSERS_PATH ??
-    path.join(os.homedir(), "workspace", ".cache", "ms-playwright");
-  return path.join(cache, "chromium-1234", "chrome-linux64", "chrome");
+  return undefined;
 }
 
 const CHROME_EXEC = resolveChromiumForLighthouse();
